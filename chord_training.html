@@ -179,6 +179,10 @@
   let selectedKeys = new Set();  // A set of indices that the user has selected
   let lowestChordIndex = null;   // The index (into currentNotes) of the chord's lowest note
 
+  let activeAudioCtx = null;
+  let activeGain = null;
+  let activeOscillators = [];
+
   // DOM elements
   const keyboardDiv       = document.getElementById("keyboard");
   const lowestNoteSelect  = document.getElementById("lowestNoteSelect");
@@ -357,80 +361,94 @@
   }
 
   //------------------------------------------------------------
-  // Play multiple frequencies simultaneously as a chord
+  // Start/stop playback for a set of frequencies
   //------------------------------------------------------------
-  function playChordFrequencies(frequencies, duration = 1.0) {
+  function startChordPlayback(frequencies) {
     if (!frequencies || frequencies.length === 0) return;
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const now = audioCtx.currentTime;
-    const stopTime = now + duration;
+    stopChordPlayback();
 
-    // Master gain for fade in/out
-    const masterGain = audioCtx.createGain();
-    masterGain.connect(audioCtx.destination);
-    masterGain.gain.setValueAtTime(0, now);
-    masterGain.gain.linearRampToValueAtTime(1, now + 0.01);
-    masterGain.gain.linearRampToValueAtTime(0, stopTime - 0.01);
+    activeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = activeAudioCtx.currentTime;
 
+    activeGain = activeAudioCtx.createGain();
+    activeGain.connect(activeAudioCtx.destination);
+    activeGain.gain.setValueAtTime(0, now);
+    activeGain.gain.linearRampToValueAtTime(1, now + 0.01);
+
+    activeOscillators = [];
     frequencies.forEach(freq => {
-      // Gains for partials
-      const fGain = audioCtx.createGain();
+      const fGain = activeAudioCtx.createGain();
       fGain.gain.value = 0.12;
-      fGain.connect(masterGain);
+      fGain.connect(activeGain);
 
-      const secondGain = audioCtx.createGain();
+      const secondGain = activeAudioCtx.createGain();
       secondGain.gain.value = 0.05;
-      secondGain.connect(masterGain);
+      secondGain.connect(activeGain);
 
-      const thirdGain = audioCtx.createGain();
+      const thirdGain = activeAudioCtx.createGain();
       thirdGain.gain.value = 0.03;
-      thirdGain.connect(masterGain);
+      thirdGain.connect(activeGain);
 
-      // Fundamental
-      const oscFund = audioCtx.createOscillator();
+      const oscFund = activeAudioCtx.createOscillator();
       oscFund.type = "sine";
       oscFund.frequency.value = freq;
       oscFund.connect(fGain);
       oscFund.start(now);
-      oscFund.stop(stopTime);
 
-      // 2nd harmonic
-      const osc2 = audioCtx.createOscillator();
+      const osc2 = activeAudioCtx.createOscillator();
       osc2.type = "sine";
       osc2.frequency.value = freq * 2;
       osc2.connect(secondGain);
       osc2.start(now);
-      osc2.stop(stopTime);
 
-      // 3rd harmonic
-      const osc3 = audioCtx.createOscillator();
+      const osc3 = activeAudioCtx.createOscillator();
       osc3.type = "sine";
       osc3.frequency.value = freq * 3;
       osc3.connect(thirdGain);
       osc3.start(now);
-      osc3.stop(stopTime);
+
+      activeOscillators.push(oscFund, osc2, osc3);
     });
+  }
+
+  function stopChordPlayback() {
+    if (!activeAudioCtx) return;
+    const now = activeAudioCtx.currentTime;
+    activeGain.gain.cancelScheduledValues(now);
+    activeGain.gain.setValueAtTime(activeGain.gain.value, now);
+    activeGain.gain.linearRampToValueAtTime(0, now + 0.03);
+    activeOscillators.forEach(osc => {
+      try { osc.stop(now + 0.03); } catch (e) {}
+    });
+    setTimeout(() => {
+      if (activeAudioCtx) {
+        activeAudioCtx.close();
+        activeAudioCtx = null;
+        activeGain = null;
+        activeOscillators = [];
+      }
+    }, 60);
   }
 
   //------------------------------------------------------------
   // Play the generated chord (all notes simultaneously)
   //------------------------------------------------------------
-  function playGeneratedChord() {
+  function startGeneratedChord() {
     if (!randomChord || randomChord.length === 0) return;
     const freqs = randomChord.map(obj => obj.freq);
-    playChordFrequencies(freqs, 1.5);
+    startChordPlayback(freqs);
   }
 
   //------------------------------------------------------------
   // Play the user's currently selected notes
   //------------------------------------------------------------
-  function playSelectedNotes() {
+  function startSelectedChord() {
     if (selectedKeys.size === 0) return;
     const freqs = [];
     selectedKeys.forEach(idx => {
       freqs.push(currentNotes[idx].freq);
     });
-    playChordFrequencies(freqs, 1.5);
+    startChordPlayback(freqs);
   }
 
   //------------------------------------------------------------
@@ -452,8 +470,16 @@
     buildKeyboard();
     generateChord();
   });
-  playGeneratedBtn.addEventListener("click", playGeneratedChord);
-  playSelectedBtn.addEventListener("click", playSelectedNotes);
+
+  playGeneratedBtn.addEventListener("pointerdown", startGeneratedChord);
+  playGeneratedBtn.addEventListener("pointerup", stopChordPlayback);
+  playGeneratedBtn.addEventListener("pointerleave", stopChordPlayback);
+  playGeneratedBtn.addEventListener("pointercancel", stopChordPlayback);
+
+  playSelectedBtn.addEventListener("pointerdown", startSelectedChord);
+  playSelectedBtn.addEventListener("pointerup", stopChordPlayback);
+  playSelectedBtn.addEventListener("pointerleave", stopChordPlayback);
+  playSelectedBtn.addEventListener("pointercancel", stopChordPlayback);
 
   // Initialize
   buildKeyboard();
