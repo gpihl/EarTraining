@@ -183,6 +183,10 @@
   let activeGain = null;
   let activeOscillators = [];
 
+  // Fade times for chord playback (seconds)
+  const FADE_IN_TIME  = 0.01;
+  const FADE_OUT_TIME = 0.3;
+
   // DOM elements
   const keyboardDiv       = document.getElementById("keyboard");
   const lowestNoteSelect  = document.getElementById("lowestNoteSelect");
@@ -373,7 +377,7 @@
     activeGain = activeAudioCtx.createGain();
     activeGain.connect(activeAudioCtx.destination);
     activeGain.gain.setValueAtTime(0, now);
-    activeGain.gain.linearRampToValueAtTime(1, now + 0.01);
+    activeGain.gain.linearRampToValueAtTime(1, now + FADE_IN_TIME);
 
     activeOscillators = [];
     frequencies.forEach(freq => {
@@ -416,9 +420,9 @@
     const now = activeAudioCtx.currentTime;
     activeGain.gain.cancelScheduledValues(now);
     activeGain.gain.setValueAtTime(activeGain.gain.value, now);
-    activeGain.gain.linearRampToValueAtTime(0, now + 0.03);
+    activeGain.gain.linearRampToValueAtTime(0, now + FADE_OUT_TIME);
     activeOscillators.forEach(osc => {
-      try { osc.stop(now + 0.03); } catch (e) {}
+      try { osc.stop(now + FADE_OUT_TIME); } catch (e) {}
     });
     setTimeout(() => {
       if (activeAudioCtx) {
@@ -427,7 +431,7 @@
         activeGain = null;
         activeOscillators = [];
       }
-    }, 60);
+    }, (FADE_OUT_TIME + 0.05) * 1000);
   }
 
   //------------------------------------------------------------
