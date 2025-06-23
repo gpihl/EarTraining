@@ -397,8 +397,8 @@
     thirdGain.connect(mainGain);
 
     const fourthGain = audioCtx.createGain();
-    thirdGain.gain.value = 0.03;
-    thirdGain.connect(mainGain);
+    fourthGain.gain.value = 0.03;
+    fourthGain.connect(mainGain);
 
     // Fundamental
     const oscFund = audioCtx.createOscillator();
