@@ -183,7 +183,7 @@
   const selectedPlayback  = { ctx: null, gain: null, oscillators: [] };
 
   // Fade times for chord playback (seconds)
-  const FADE_IN_TIME  = 0.01;
+  const FADE_IN_TIME  = 0.3;
   const FADE_OUT_TIME = 0.7;
 
   // DOM elements
@@ -375,8 +375,8 @@
 
     state.gain = state.ctx.createGain();
     state.gain.connect(state.ctx.destination);
-    state.gain.gain.setValueAtTime(0, now);
-    state.gain.gain.linearRampToValueAtTime(1, now + FADE_IN_TIME);
+    state.gain.gain.setValueAtTime(0.0001, now);
+    state.gain.gain.exponentialRampToValueAtTime(1, now + FADE_IN_TIME);
 
     state.oscillators = [];
     frequencies.forEach(freq => {
@@ -419,7 +419,7 @@
     const now = state.ctx.currentTime;
     state.gain.gain.cancelScheduledValues(now);
     state.gain.gain.setValueAtTime(state.gain.gain.value, now);
-    state.gain.gain.linearRampToValueAtTime(0, now + FADE_OUT_TIME);
+    state.gain.gain.exponentialRampToValueAtTime(0.0001, now + FADE_OUT_TIME);
     state.oscillators.forEach(osc => {
       try { osc.stop(now + FADE_OUT_TIME); } catch (e) {}
     });
