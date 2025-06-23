@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Continuous Ear-Training Interval Practice</title>
+  <style>
+    body {
+      background-color: #2e2e2e; /* Darker background */
+      color: #ffffff; /* Light text */
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: center;
+    }
+    #intervalDisplay {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    #sliderContainer {
+      position: relative;
+      width: 80%;
+      margin: 30px auto;
+    }
+    /* Make the slider track bigger and the thumb a vertical bar for easier grabbing */
+    #pitchSlider {
+      -webkit-appearance: none; /* Removes default Chrome/Safari style */
+      width: 100%;
+      height: 6px;         /* Track height */
+      background: #444;    /* Track color */
+      border-radius: 3px;
+      outline: none;       /* No outline on focus */
+      cursor: pointer;
+    }
+    #pitchSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;         /* Thumb width */
+      height: 30px;        /* Thumb height */
+      background: #888;    /* Thumb color */
+      border-radius: 2px;
+      cursor: pointer;
+      margin-top: -12px;   /* Align thumb vertically on the track */
+    }
+    #pitchSlider::-moz-range-thumb {
+      width: 12px;
+      height: 30px;
+      background: #888;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+
+    /* Vertical line to show the correct pitch */
+    #correctLine {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background-color: red;
+      display: none; /* Hidden by default, toggled on/off */
+    }
+    #centsDifference {
+      display: none; /* Show/Hide with the same toggle button */
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    button {
+      margin: 5px;
+      padding: 6px 12px;
+      background-color: #444;
+      color: #fff;
+      border: 1px solid #666;
+      cursor: pointer;
+    }
+    button.active {
+      background-color: #880; /* highlight color when 'on' */
+    }
+
+    /* Results area */
+    #resultsContainer {
+      margin-top: 30px;
+      /* border-top: 1px solid #666; */
+      padding-top: 10px;
+      width: 80%;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+    }
+    #resultsContainer h3 {
+      margin-bottom: 10px;
+    }
+    /* Table for aligning results in two columns */
+    #resultsTable {
+      width: 100%;
+      border-collapse: collapse; /* no visible lines */
+    }
+    #resultsTable td {
+      padding: 2px 5px;
+    }
+    /* First column left-aligned, second column right-aligned */
+    #resultsTable td:nth-child(1) {
+      text-align: left;
+    }
+    #resultsTable td:nth-child(2) {
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Continuous Interval Ear Training</h1>
+
+<div id="intervalDisplay"></div>
+
+<!-- All buttons are now enabled from the start; no dedicated sound button -->
+<button id="toggleRootBtn">Tone 1</button>
+<button id="toggleUserBtn">Tone 2</button>
+<button id="toggleCheckBtn">Check</button>
+<button id="newIntervalBtn">New</button>
+<button id="moveToCorrectBtn">Correct</button>
+<button id="moveToJustBtn">Correct Just</button>
+
+<div id="sliderContainer">
+  <input type="range" id="pitchSlider" min="0" max="1" step="any">
+  <div id="correctLine"></div>
+</div>
+
+<div id="centsDifference"></div>
+
+<!-- Results area (always visible) -->
+<div id="resultsContainer">
+  <h3>Results</h3>
+  <div id="resultsList"></div>
+</div>
+
+<script>
+/*
+ * Configuration
+ */
+
+// List of intervals from minor 2nd (1 semitone) to major 13th (21 semitones)
+const INTERVALS = [
+  { semitones: 1,  name: "Minor 2nd" },
+  { semitones: 2,  name: "Major 2nd" },
+  { semitones: 3,  name: "Minor 3rd" },
+  { semitones: 4,  name: "Major 3rd" },
+  { semitones: 5,  name: "Perfect 4th" },
+  { semitones: 6,  name: "Tritone" },
+  { semitones: 7,  name: "Perfect 5th" },
+  { semitones: 8,  name: "Minor 6th" },
+  { semitones: 9,  name: "Major 6th" },
+  { semitones: 10, name: "Minor 7th" },
+  { semitones: 11, name: "Major 7th" },
+  { semitones: 12, name: "Octave" },
+  { semitones: 13, name: "Minor 9th" },
+  { semitones: 14, name: "Major 9th" },
+  { semitones: 15, name: "Minor 10th" },
+  { semitones: 16, name: "Major 10th" },
+  { semitones: 17, name: "Perfect 11th" },
+  { semitones: 18, name: "Augmented 11th" },
+  { semitones: 19, name: "Perfect 12th" },
+  { semitones: 20, name: "Minor 13th" },
+  { semitones: 21, name: "Major 13th" }
+];
+
+// Total slider span in semitones
+const SLIDER_RANGE_SEMITONES = 5;
+
+/*
+  List of available root frequencies (notes) between
+  A2 (110 Hz) and A3 (220 Hz) in 12-tone equal temperament.
+*/
+const TUNED_ROOTS = [
+  110.00,  // A2
+  116.54,  // A#2 / Bb2
+  123.47,  // B2
+  130.81,  // C3
+  138.59,  // C#3 / Db3
+  146.83,  // D3
+  155.56,  // D#3 / Eb3
+  164.81,  // E3
+  174.61,  // F3
+  184.99,  // F#3 / Gb3
+  195.99,  // G3
+  207.65,  // G#3 / Ab3
+  220.00   // A3
+];
+
+/* Just-intonation ratios for semitones 1..12.
+   For intervals above 12 semitones, double the ratio. */
+const JUST_RATIOS_BASE = {
+  1: 16/15,  // m2
+  2: 9/8,    // M2
+  3: 6/5,    // m3
+  4: 5/4,    // M3
+  5: 4/3,    // P4
+  6: 45/32,  // Tritone
+  7: 3/2,    // P5
+  8: 8/5,    // m6
+  9: 5/3,    // M6
+  10: 7/4,   // m7
+  11: 15/8,  // M7
+  12: 2      // Octave
+};
+function getJustRatio(st) {
+  if (st <= 12) {
+    return JUST_RATIOS_BASE[st];
+  } else {
+    // For intervals above an octave, double the ratio
+    return JUST_RATIOS_BASE[st - 12] * 2;
+  }
+}
+
+/* Audio elements; created on-demand. */
+let audioCtx = null;
+let rootOsc = null;
+let userOsc = null;
+
+// Gains and panners
+let rootGain = null;
+let userGain = null;
+let rootPanner = null;
+let userPanner = null;
+
+// We'll store references to the custom wave (with overtones)
+let customWave = null;
+
+// Current target info
+let rootFreq = 220;
+let targetFreq = 330;
+let intervalName = "";
+let currentSemitones = 0;
+
+// "Check" visibility replaces the old marker
+let checkVisible = false;
+
+// We'll store the actual slider frequency bounds for each new interval
+let sliderMinFreq = 100;
+let sliderMaxFreq = 1000;
+
+/* State flags for toggles */
+let rootOn = false;
+let userOn = false;
+
+/* Performance tracking: store each guess in an array of { interval, difference } */
+let results = [];
+
+// HTML elements
+const toggleRootBtn       = document.getElementById("toggleRootBtn");
+const toggleUserBtn       = document.getElementById("toggleUserBtn");
+const toggleCheckBtn      = document.getElementById("toggleCheckBtn");
+const newIntervalBtn      = document.getElementById("newIntervalBtn");
+const moveToCorrectBtn    = document.getElementById("moveToCorrectBtn");
+const moveToJustBtn       = document.getElementById("moveToJustBtn");
+const pitchSlider         = document.getElementById("pitchSlider");
+const correctLine         = document.getElementById("correctLine");
+const centsDifference     = document.getElementById("centsDifference");
+const intervalDisplay     = document.getElementById("intervalDisplay");
+const resultsList         = document.getElementById("resultsList");
+
+/***************************************************************
+ * AUDIO SETUP ON DEMAND
+ ***************************************************************/
+async function initAudioIfNeeded() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await audioCtx.resume();
+
+    // Create a custom PeriodicWave with up to the 4th overtone
+    const real = new Float32Array([0, 1, 0.15, 0.03, 0.01]);
+    const imag = new Float32Array(real.length); // zero if we only want sine phases
+    customWave = audioCtx.createPeriodicWave(real, imag);
+
+    // Create oscillators
+    rootOsc = audioCtx.createOscillator();
+    rootOsc.setPeriodicWave(customWave);
+    userOsc = audioCtx.createOscillator();
+    userOsc.setPeriodicWave(customWave);
+
+    // Create StereoPanners
+    rootPanner = audioCtx.createStereoPanner();
+    userPanner = audioCtx.createStereoPanner();
+    rootPanner.pan.value = -0.5;
+    userPanner.pan.value =  0.5;
+
+    // Create Gains
+    rootGain = audioCtx.createGain();
+    userGain = audioCtx.createGain();
+    rootGain.gain.value = 0; // start muted
+    userGain.gain.value = 0; // start muted
+
+    // Connect root osc -> panner -> gain -> destination
+    rootOsc.connect(rootPanner).connect(rootGain).connect(audioCtx.destination);
+    rootOsc.start();
+
+    // Connect user osc -> panner -> gain -> destination
+    userOsc.connect(userPanner).connect(userGain).connect(audioCtx.destination);
+    userOsc.start();
+  }
+}
+
+/***************************************************************
+ * Button Handlers
+ ***************************************************************/
+
+// Toggle root oscillator on/off
+toggleRootBtn.addEventListener("click", async () => {
+  // Init audio if needed
+  await initAudioIfNeeded();
+  setRootOn(!rootOn);
+});
+
+// Toggle user oscillator on/off
+toggleUserBtn.addEventListener("click", async () => {
+  // Init audio if needed
+  await initAudioIfNeeded();
+  setUserOn(!userOn);
+});
+
+// Toggle check (marker line and cent difference)
+toggleCheckBtn.addEventListener("click", () => {
+  setCheckOn(!checkVisible);
+});
+
+// Generate a new random interval
+newIntervalBtn.addEventListener("click", () => {
+  pickNewInterval();
+});
+
+// Move user pitch to the exact correct pitch (12-TET)
+moveToCorrectBtn.addEventListener("click", async () => {
+  await initAudioIfNeeded();
+  setUserPitchToTarget();
+});
+
+// Move user pitch to just-intonation pitch
+moveToJustBtn.addEventListener("click", async () => {
+  await initAudioIfNeeded();
+  setUserPitchToJust();
+});
+
+/***************************************************************
+ * Slider Events
+ ***************************************************************/
+
+/*
+  Listen for pointerdown (or mousedown) to detect user "grabbing" the slider.
+  As soon as the user interacts with the slider, turn the user tone ON (if it’s off).
+*/
+pitchSlider.addEventListener("pointerdown", async () => {
+  if (!userOn) {
+    await initAudioIfNeeded();
+    setUserOn(true);
+  }
+});
+pitchSlider.addEventListener("mousedown", async () => {
+  if (!userOn) {
+    await initAudioIfNeeded();
+    setUserOn(true);
+  }
+});
+
+/*
+  On input, update frequency. (This triggers continuously while dragging.)
+*/
+pitchSlider.addEventListener("input", () => {
+  if (audioCtx && userOsc) {
+    const val = parseFloat(pitchSlider.value);
+    const freq = sliderValueToFrequency(val);
+    userOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  }
+  if (checkVisible) {
+    updateCentsDifference();
+  }
+});
+
+/***************************************************************
+ * Check (Marker) On/Off
+ ***************************************************************/
+function setCheckOn(on) {
+  checkVisible = on;
+  toggleCheckBtn.classList.toggle("active", on);
+
+  correctLine.style.display    = on ? "block" : "none";
+  centsDifference.style.display = on ? "block" : "none";
+
+  updateMarkerPosition();
+  updateCentsDifference();
+
+  // If turning ON, record the current guess
+  if (on) {
+    recordCurrentGuess();
+  }
+}
+
+/***************************************************************
+ * Toggling Root & User On/Off with styling
+ ***************************************************************/
+function setRootOn(on) {
+  rootOn = on;
+  if (rootGain) {
+    rootGain.gain.value = on ? 0.2 : 0;
+  }
+  toggleRootBtn.classList.toggle("active", on);
+}
+
+function setUserOn(on) {
+  userOn = on;
+  if (userGain) {
+    userGain.gain.value = on ? 0.2 : 0;
+  }
+  toggleUserBtn.classList.toggle("active", on);
+}
+
+/***************************************************************
+ * Recording results
+ ***************************************************************/
+
+/**
+ * Compute the current cent difference and store it
+ * along with the interval name. Then update the display.
+ * The NEWEST attempt goes at the TOP of the list.
+ */
+function recordCurrentGuess() {
+  const diff = getCurrentDifference();
+  // Add new item at front
+  results.unshift({
+    interval: intervalName,
+    difference: diff
+  });
+  updateResultsList();
+}
+
+/**
+ * Rebuild the resultsList display,
+ * newest first, with average absolute distance.
+ */
+function updateResultsList() {
+  if (results.length === 0) {
+    resultsList.innerHTML = "(No guesses yet.)";
+    return;
+  }
+
+  // 1. Compute average absolute distance
+  let sum = 0;
+  for (let r of results) {
+    sum += Math.abs(r.difference);
+  }
+  const avg = sum / results.length;
+
+  // 2. Build a table
+  let html = `<div>Average distance: ${avg.toFixed(1)} cents</div><br>`;
+  html += `<table id="resultsTable">`;
+  for (let r of results) {
+    let signString = r.difference > 0 ? "+" : "";
+    html += `
+      <tr>
+        <td>${r.interval}</td>
+        <td>${signString}${r.difference} cents</td>
+      </tr>
+    `;
+  }
+  html += `</table>`;
+
+  resultsList.innerHTML = html;
+}
+
+/***************************************************************
+ * Utility: get current difference in cents
+ ***************************************************************/
+function getCurrentDifference() {
+  const userVal = parseFloat(pitchSlider.value);
+  const userFreq = sliderValueToFrequency(userVal);
+  let centDiff = 0;
+  if (targetFreq > 0) {
+    centDiff = 1200 * Math.log2(userFreq / targetFreq);
+  }
+  return Math.round(centDiff * 10) / 10;
+}
+
+/***************************************************************
+ * Frequency <--> Slider mapping
+ ***************************************************************/
+
+// Convert [0..1] slider value -> frequency in [sliderMinFreq..sliderMaxFreq]
+function sliderValueToFrequency(value) {
+  return sliderMinFreq * Math.pow(sliderMaxFreq / sliderMinFreq, value);
+}
+
+// Convert frequency -> [0..1] slider value
+function frequencyToSliderValue(freq) {
+  return Math.log(freq / sliderMinFreq) / Math.log(sliderMaxFreq / sliderMinFreq);
+}
+
+/***************************************************************
+ * Marker and cent difference
+ ***************************************************************/
+
+// Show the vertical marker at the correct pitch's position
+function updateMarkerPosition() {
+  if (!checkVisible) return;
+  const sliderVal = frequencyToSliderValue(targetFreq);
+  const sliderWidth = pitchSlider.offsetWidth;
+  const lineX = sliderVal * sliderWidth;
+  correctLine.style.left = lineX + "px";
+}
+
+// Show how many cents away the user is from the correct pitch
+function updateCentsDifference() {
+  const centDiff = getCurrentDifference();
+  centsDifference.textContent = `You are ${centDiff} cents from the target.`;
+}
+
+/***************************************************************
+ * Move user oscillator to target frequency (12-TET)
+ ***************************************************************/
+function setUserPitchToTarget() {
+  if (!userOsc) return;
+  // Convert the 12-TET targetFreq to a slider value
+  const correctSliderVal = frequencyToSliderValue(targetFreq);
+  pitchSlider.value = correctSliderVal;
+
+  // Move the oscillator's frequency to targetFreq
+  userOsc.frequency.setValueAtTime(targetFreq, audioCtx.currentTime);
+
+  // Update marker & cent difference if visible
+  if (checkVisible) {
+    updateMarkerPosition();
+    updateCentsDifference();
+  }
+}
+
+/***************************************************************
+ * Move user oscillator to just-intonation frequency
+ ***************************************************************/
+function setUserPitchToJust() {
+  if (!userOsc) return;
+  const ratio = getJustRatio(currentSemitones);
+  const justFreq = rootFreq * ratio;
+
+  // Convert to slider value
+  const justSliderVal = frequencyToSliderValue(justFreq);
+
+  // Clamp to [0..1]
+  const clampedVal = Math.min(Math.max(justSliderVal, 0), 1);
+  pitchSlider.value = clampedVal;
+
+  // Calculate final frequency after clamping
+  const finalFreq = sliderValueToFrequency(clampedVal);
+
+  userOsc.frequency.setValueAtTime(finalFreq, audioCtx.currentTime);
+
+  // Update marker & cent difference if visible
+  if (checkVisible) {
+    updateMarkerPosition();
+    updateCentsDifference();
+  }
+}
+
+/***************************************************************
+ * Pick a new interval: random root freq (tuned), random interval
+ ***************************************************************/
+function pickNewInterval() {
+  // Turn user off automatically
+  setUserOn(false);
+  setRootOn(true);
+
+  // Turn "Check" (marker) off automatically
+  setCheckOn(false);
+
+  // 1. Choose random interval from list
+  const intervalObj = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
+  intervalName = intervalObj.name;
+  currentSemitones = intervalObj.semitones;
+
+  // 2. Pick a tuned root frequency from the TUNED_ROOTS array
+  rootFreq = TUNED_ROOTS[Math.floor(Math.random() * TUNED_ROOTS.length)];
+
+  // 3. Calculate targetFreq (12-TET)
+  targetFreq = rootFreq * Math.pow(2, currentSemitones / 12);
+
+  // 4. Randomize the correct pitch location within the slider's total semitone range
+  const randomOffset = Math.random() * SLIDER_RANGE_SEMITONES;
+  sliderMinFreq = targetFreq * Math.pow(2, -randomOffset / 12);
+  sliderMaxFreq = sliderMinFreq * Math.pow(2, SLIDER_RANGE_SEMITONES / 12);
+
+  // 5. If root is on, set rootOsc frequency (only if audio is initted)
+  if (audioCtx && rootOsc) {
+    rootOsc.frequency.setValueAtTime(rootFreq, audioCtx.currentTime);
+  }
+
+  // 6. Randomize the user oscillator starting position somewhere in [0..1]
+  const randomSliderVal = Math.random();
+  pitchSlider.value = randomSliderVal;
+  if (audioCtx && userOsc) {
+    const userStartFreq = sliderValueToFrequency(randomSliderVal);
+    userOsc.frequency.setValueAtTime(userStartFreq, audioCtx.currentTime);
+  }
+
+  // 7. Update UI text
+  intervalDisplay.textContent = `${intervalName}`;
+
+  // 8. Update marker & cent difference if needed
+  if (checkVisible) {
+    updateMarkerPosition();
+    updateCentsDifference();
+  }
+}
+</script>
+
+</body>
+</html>

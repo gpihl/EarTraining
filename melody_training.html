@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Melody Practice</title>
+  <style>
+    /* Dark background for the entire page */
+    body {
+      background-color: #333;
+      color: #fff;
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    .controls {
+      margin-bottom: 20px;
+    }
+    .controls label {
+      margin-right: 10px;
+    }
+    #keyboard {
+      white-space: nowrap;
+    }
+    .key {
+      display: inline-block;
+      position: relative; /* for placing labels absolutely */
+      box-sizing: border-box;
+      user-select: none;
+      border: 1px solid #666;
+      margin: 0;
+      cursor: pointer;
+    }
+    /* White keys: aligned at bottom */
+    .white-key {
+      width: 40px;
+      height: 150px;
+      background: #fff;
+      vertical-align: bottom;
+      z-index: 1;
+    }
+    /* Black keys: aligned at top */
+    .black-key {
+      width: 25px;
+      height: 100px;
+      background: #000;
+      color: #fff;
+      vertical-align: top;
+      z-index: 2;
+      margin: 0 -12px; /* overlap for a piano-like look */
+    }
+    /* Circular marker for any note in a melody (user or generated) */
+    .melody-marker {
+      position: absolute;
+      bottom: 6px;
+      left: 0;
+      right: 0;
+      margin: auto;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background-color: #ff8484; /* pinkish circle */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000; /* label inside circle */
+      font-weight: bold;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Melody Practice</h1>
+
+<div class="controls">
+  <label for="lowestNoteSelect">Lowest Note:</label>
+  <select id="lowestNoteSelect"></select>
+
+  <label for="highestNoteSelect">Highest Note:</label>
+  <select id="highestNoteSelect"></select>
+
+  <label for="numNotesSelect"># of Notes:</label>
+  <select id="numNotesSelect">
+    <option value="2">2</option>
+    <option value="3" selected>3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+    <option value="6">6</option>
+  </select>
+</div>
+
+<div class="controls">
+  <button id="generateBtn">Generate New Melody</button>
+  <button id="playGeneratedBtn">Play Generated Melody</button>
+  <button id="playUserBtn">Play Selected Melody</button>
+</div>
+
+<div id="keyboard"></div>
+
+<script>
+  // Extended note list from C2 up to C7
+  const ALL_NOTES = [
+    { name: "E1",  freq: 82.41/2.0 },
+    { name: "F1",  freq: 87.31/2.0 },
+    { name: "F#1", freq: 92.50/2.0 },
+    { name: "G1",  freq: 98.00/2.0 },
+    { name: "G#1", freq: 103.83/2.0 },
+    { name: "A1",  freq: 110.00/2.0 },
+    { name: "A#1", freq: 116.54/2.0 },
+    { name: "B1",  freq: 123.47/2.0 },
+
+    { name: "C2",  freq: 65.41 },
+    { name: "C#2", freq: 69.30 },
+    { name: "D2",  freq: 73.42 },
+    { name: "D#2", freq: 77.78 },
+    { name: "E2",  freq: 82.41 },
+    { name: "F2",  freq: 87.31 },
+    { name: "F#2", freq: 92.50 },
+    { name: "G2",  freq: 98.00 },
+    { name: "G#2", freq: 103.83 },
+    { name: "A2",  freq: 110.00 },
+    { name: "A#2", freq: 116.54 },
+    { name: "B2",  freq: 123.47 },
+
+    { name: "C3",  freq: 130.81 },
+    { name: "C#3", freq: 138.59 },
+    { name: "D3",  freq: 146.83 },
+    { name: "D#3", freq: 155.56 },
+    { name: "E3",  freq: 164.81 },
+    { name: "F3",  freq: 174.61 },
+    { name: "F#3", freq: 185.00 },
+    { name: "G3",  freq: 196.00 },
+    { name: "G#3", freq: 207.65 },
+    { name: "A3",  freq: 220.00 },
+    { name: "A#3", freq: 233.08 },
+    { name: "B3",  freq: 246.94 },
+
+    { name: "C4",  freq: 261.63 },
+    { name: "C#4", freq: 277.18 },
+    { name: "D4",  freq: 293.66 },
+    { name: "D#4", freq: 311.13 },
+    { name: "E4",  freq: 329.63 },
+    { name: "F4",  freq: 349.23 },
+    { name: "F#4", freq: 369.99 },
+    { name: "G4",  freq: 392.00 },
+    { name: "G#4", freq: 415.30 },
+    { name: "A4",  freq: 440.00 },
+    { name: "A#4", freq: 466.16 },
+    { name: "B4",  freq: 493.88 },
+
+    { name: "C5",  freq: 523.25 },
+    { name: "C#5", freq: 554.37 },
+    { name: "D5",  freq: 587.33 },
+    { name: "D#5", freq: 622.25 },
+    { name: "E5",  freq: 659.25 },
+    { name: "F5",  freq: 698.46 },
+    { name: "F#5", freq: 739.99 },
+    { name: "G5",  freq: 783.99 },
+    { name: "G#5", freq: 830.61 },
+    { name: "A5",  freq: 880.00 },
+    { name: "A#5", freq: 932.33 },
+    { name: "B5",  freq: 987.77 },
+
+    { name: "C6",  freq: 1046.50 },
+    { name: "C#6", freq: 1108.73 },
+    { name: "D6",  freq: 1174.66 },
+    { name: "D#6", freq: 1244.51 },
+    { name: "E6",  freq: 1318.51 },
+    { name: "F6",  freq: 1396.91 },
+    { name: "F#6", freq: 1479.98 },
+    { name: "G6",  freq: 1567.98 },
+    { name: "G#6", freq: 1661.22 },
+    { name: "A6",  freq: 1760.00 },
+    { name: "A#6", freq: 1864.66 },
+    { name: "B6",  freq: 1975.53 },
+
+    { name: "C7",  freq: 2093.00 },
+  ];
+
+  // Range-based data
+  let currentNotes = [];       // The slice of ALL_NOTES in the chosen range
+  let keyElements  = [];       // The piano key divs
+  // Melody data
+  let randomMelody = [];       // The randomly generated melody (array of {index, freq} in currentNotes)
+  let userMelody   = [];       // The user-chosen melody (array of local indices referencing currentNotes)
+
+  // DOM references
+  const keyboardDiv       = document.getElementById("keyboard");
+  const lowestNoteSelect  = document.getElementById("lowestNoteSelect");
+  const highestNoteSelect = document.getElementById("highestNoteSelect");
+  const numNotesSelect    = document.getElementById("numNotesSelect");
+  const generateBtn       = document.getElementById("generateBtn");
+  const playGeneratedBtn  = document.getElementById("playGeneratedBtn");
+  const playUserBtn       = document.getElementById("playUserBtn");
+
+  //-----------------------------------------------------------
+  // 1) Populate the range dropdowns
+  //-----------------------------------------------------------
+  function populateNoteSelects() {
+    ALL_NOTES.forEach((note, index) => {
+      const optionLow  = document.createElement("option");
+      optionLow.value  = index;
+      optionLow.textContent = note.name;
+
+      const optionHigh = document.createElement("option");
+      optionHigh.value = index;
+      optionHigh.textContent = note.name;
+
+      lowestNoteSelect.appendChild(optionLow);
+      highestNoteSelect.appendChild(optionHigh);
+    });
+
+    // Default: C3 -> C5
+    const defaultLowest  = ALL_NOTES.findIndex(n => n.name === "C3");
+    const defaultHighest = ALL_NOTES.findIndex(n => n.name === "C5");
+    if (defaultLowest !== -1)  lowestNoteSelect.value  = defaultLowest;
+    if (defaultHighest !== -1) highestNoteSelect.value = defaultHighest;
+  }
+
+  populateNoteSelects();
+
+  //-----------------------------------------------------------
+  // 2) Build the keyboard for the chosen range
+  //-----------------------------------------------------------
+  function buildKeyboard() {
+    keyboardDiv.innerHTML = "";
+    keyElements = [];
+
+    const lowestIndex  = parseInt(lowestNoteSelect.value, 10);
+    const highestIndex = parseInt(highestNoteSelect.value, 10);
+    if (isNaN(lowestIndex) || isNaN(highestIndex)) return;
+
+    const start = Math.min(lowestIndex, highestIndex);
+    const end   = Math.max(lowestIndex, highestIndex);
+
+    currentNotes = ALL_NOTES.slice(start, end + 1);
+
+    currentNotes.forEach((note, localIdx) => {
+      const keyDiv = document.createElement("div");
+      keyDiv.classList.add("key");
+      if (note.name.includes("#")) {
+        keyDiv.classList.add("black-key");
+      } else {
+        keyDiv.classList.add("white-key");
+      }
+      // Click to add or remove the last selected note
+      keyDiv.addEventListener("click", () => onKeyClick(localIdx));
+      keyboardDiv.appendChild(keyDiv);
+      keyElements.push(keyDiv);
+    });
+  }
+
+  //-----------------------------------------------------------
+  // 3) Generate a new random melody
+  //-----------------------------------------------------------
+  function generateRandomMelody() {
+    clearAllMarkers();
+    randomMelody = [];
+    userMelody   = [];
+
+    let howMany = parseInt(numNotesSelect.value, 10) || 3;
+    if (howMany > currentNotes.length) {
+      howMany = currentNotes.length;
+    }
+
+    // Shuffle array of indices
+    const indices = [...Array(currentNotes.length).keys()];
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+
+    // Pick first howMany
+    const chosen = indices.slice(0, howMany);
+    // Build randomMelody
+    randomMelody = chosen.map(idx => ({ index: idx, freq: currentNotes[idx].freq }));
+
+    // For the *melody*, we don’t necessarily sort by frequency. We want a random order:
+    // So we can keep it as is or re-shuffle, but here the chosen array is already random.
+
+    // Force the first note in userMelody to be randomMelody[0]
+    if (randomMelody.length > 0) {
+      userMelody.push(randomMelody[0].index);
+      addMarker(0, randomMelody[0].index); // Label as #1
+    }
+  }
+
+  //-----------------------------------------------------------
+  // onKeyClick: attempt to add or remove the last note
+  //
+  // - If the userMelody is shorter than the randomMelody length,
+  //   we can add a new note (unless we’re clicking the same key as last note).
+  // - If the clicked key is the last note in userMelody, remove it (unless it’s the first forced note).
+  //-----------------------------------------------------------
+  function onKeyClick(localIdx) {
+    // If there's no randomMelody or userMelody is empty, do nothing
+    if (randomMelody.length === 0 || userMelody.length === 0) return;
+
+    // The first note in userMelody cannot be unselected
+    const firstNote = userMelody[0];
+
+    // The current last note in userMelody
+    const lastNote = userMelody[userMelody.length - 1];
+
+    // If user clicks the last selected note (and it's not the first note), remove it
+    if (localIdx === lastNote && lastNote !== firstNote) {
+      removeLastMarker();
+      userMelody.pop();
+      return;
+    }
+
+    // Otherwise, if userMelody is not at capacity, we can add a note
+    if (userMelody.length < randomMelody.length) {
+      // Only add if this isn't the same note as the last one
+      if (localIdx !== lastNote) {
+        userMelody.push(localIdx);
+        addMarker(userMelody.length - 1, localIdx);
+      }
+    }
+  }
+
+  //-----------------------------------------------------------
+  // Marker creation/removal for userMelody
+  //-----------------------------------------------------------
+  function addMarker(positionInMelody, localIdx) {
+    // positionInMelody is 0-based, but we want to display 1-based numbering
+    const labelNumber = positionInMelody + 1;
+    const marker = document.createElement("div");
+    marker.className = "melody-marker";
+    marker.textContent = labelNumber;
+
+    keyElements[localIdx].appendChild(marker);
+  }
+
+  function removeLastMarker() {
+    // Remove the marker from the last note in userMelody
+    const lastPos = userMelody.length - 1;
+    const lastKeyIndex = userMelody[lastPos];
+    if (!keyElements[lastKeyIndex]) return;
+
+    const marker = keyElements[lastKeyIndex].querySelector(".melody-marker");
+    if (marker) {
+      keyElements[lastKeyIndex].removeChild(marker);
+    }
+  }
+
+  //-----------------------------------------------------------
+  // Clear all markers from the keyboard (both random & user)
+  //-----------------------------------------------------------
+  function clearAllMarkers() {
+    keyElements.forEach(keyDiv => {
+      const markers = keyDiv.querySelectorAll(".melody-marker");
+      markers.forEach(m => keyDiv.removeChild(m));
+    });
+  }
+
+  //-----------------------------------------------------------
+  // 4) Playback: plays notes in sequence
+  //    We'll define a utility function to play an array of frequencies in sequence
+  //-----------------------------------------------------------
+  function playMelodySequence(melodyArray) {
+    if (!melodyArray || melodyArray.length === 0) return;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let now = audioCtx.currentTime;
+    const noteDuration = 0.6;
+    const gap = 0.1;
+
+    melodyArray.forEach((freq, idx) => {
+      playOneNote(audioCtx, freq, now, noteDuration);
+      now += noteDuration + gap;
+    });
+  }
+
+  // A helper function: plays one note with a short fade in/out and partials
+  function playOneNote(audioCtx, frequency, startTime, duration) {
+    const stopTime = startTime + duration;
+    const mainGain = audioCtx.createGain();
+    mainGain.connect(audioCtx.destination);
+
+
+    // Fade in quickly, then out
+    mainGain.gain.setValueAtTime(0, startTime);
+    mainGain.gain.linearRampToValueAtTime(1, startTime + 0.01);
+    mainGain.gain.linearRampToValueAtTime(0, stopTime - 0.01);
+
+    // Gains for partials
+    const fGain = audioCtx.createGain();
+    fGain.gain.value = 0.20;
+    fGain.connect(mainGain);
+
+    const secondGain = audioCtx.createGain();
+    secondGain.gain.value = 0.10;
+    secondGain.connect(mainGain);
+
+    const thirdGain = audioCtx.createGain();
+    thirdGain.gain.value = 0.05;
+    thirdGain.connect(mainGain);
+
+    const fourthGain = audioCtx.createGain();
+    thirdGain.gain.value = 0.03;
+    thirdGain.connect(mainGain);
+
+    // Fundamental
+    const oscFund = audioCtx.createOscillator();
+    oscFund.type = "sine";
+    oscFund.frequency.value = frequency;
+    oscFund.connect(fGain);
+    oscFund.start(startTime);
+    oscFund.stop(stopTime);
+
+    // 2nd harmonic
+    const osc2 = audioCtx.createOscillator();
+    osc2.type = "sine";
+    osc2.frequency.value = frequency * 2;
+    osc2.connect(secondGain);
+    osc2.start(startTime);
+    osc2.stop(stopTime);
+
+    // 3rd harmonic
+    const osc3 = audioCtx.createOscillator();
+    osc3.type = "sine";
+    osc3.frequency.value = frequency * 3;
+    osc3.connect(thirdGain);
+    osc3.start(startTime);
+    osc3.stop(stopTime);
+
+    // 4th harmonic
+    const osc4 = audioCtx.createOscillator();
+    osc4.type = "sine";
+    osc4.frequency.value = frequency * 4;
+    osc4.connect(fourthGain);
+    osc4.start(startTime);
+    osc4.stop(stopTime);
+  }
+
+  //-----------------------------------------------------------
+  // 5) Button handlers
+  //-----------------------------------------------------------
+  function onGenerate() {
+    buildKeyboard();
+    generateRandomMelody();
+  }
+
+  function onPlayGenerated() {
+    // Plays the random melody in order
+    if (!randomMelody || randomMelody.length === 0) return;
+    const freqArray = randomMelody.map(obj => obj.freq);
+    playMelodySequence(freqArray);
+  }
+
+  function onPlayUser() {
+    if (userMelody.length === 0) return;
+    // Convert each userMelody index -> freq
+    const freqArray = userMelody.map(localIdx => currentNotes[localIdx].freq);
+    playMelodySequence(freqArray);
+  }
+
+  //-----------------------------------------------------------
+  // Add event listeners
+  //-----------------------------------------------------------
+  lowestNoteSelect.addEventListener("change", () => {
+    buildKeyboard();
+    generateRandomMelody();
+  });
+  highestNoteSelect.addEventListener("change", () => {
+    buildKeyboard();
+    generateRandomMelody();
+  });
+  numNotesSelect.addEventListener("change", () => {
+    generateRandomMelody();
+  });
+
+  generateBtn.addEventListener("click", onGenerate);
+  playGeneratedBtn.addEventListener("click", onPlayGenerated);
+  playUserBtn.addEventListener("click", onPlayUser);
+
+  //-----------------------------------------------------------
+  // Initialize on load
+  //-----------------------------------------------------------
+  buildKeyboard();
+  generateRandomMelody();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sight-Singing Practice</title>
+  <style>
+    /* Dark background for the entire page */
+    body {
+      background-color: #333;
+      color: #fff;
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    .controls {
+      margin-bottom: 20px;
+    }
+    .controls label {
+      margin-right: 10px;
+    }
+    #keyboard {
+      white-space: nowrap;
+    }
+    .key {
+      display: inline-block;
+      position: relative; /* for placing label absolutely */
+      box-sizing: border-box;
+      user-select: none;
+      border: 1px solid #666;
+      margin: 0;
+    }
+    /* White keys: aligned at bottom */
+    .white-key {
+      width: 40px;
+      height: 150px;
+      background: #fff;
+      vertical-align: bottom;
+      z-index: 1;
+    }
+    /* Black keys: aligned at top */
+    .black-key {
+      width: 25px;
+      height: 100px;
+      background: #000;
+      color: #fff;
+      vertical-align: top;
+      z-index: 2;
+      margin: 0 -12px; /* overlap for a piano-like look */
+    }
+    /* Number labels at the bottom of each key */
+    .sequence-label {
+      position: absolute;
+      bottom: 5px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.2em;
+      color: #ff8484;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Sight-Singing Practice</h1>
+
+<div class="controls">
+  <label for="lowestNoteSelect">Lowest Note:</label>
+  <select id="lowestNoteSelect"></select>
+
+  <label for="highestNoteSelect">Highest Note:</label>
+  <select id="highestNoteSelect"></select>
+
+  <label for="numNotesInput"># of Notes:</label>
+  <input type="number" id="numNotesInput" value="3" min="1" max="50" style="width:60px;">
+</div>
+
+<div class="controls">
+  <button id="nextBtn">Next</button>
+  <button id="playBtn">Play</button>
+  <button id="playFirstBtn">Play First</button>
+</div>
+
+<div id="keyboard"></div>
+
+<script>
+  // Extended note list from C2 up to C7
+  const ALL_NOTES = [
+    { name: "C2",  freq: 65.41 },
+    { name: "C#2", freq: 69.30 },
+    { name: "D2",  freq: 73.42 },
+    { name: "D#2", freq: 77.78 },
+    { name: "E2",  freq: 82.41 },
+    { name: "F2",  freq: 87.31 },
+    { name: "F#2", freq: 92.50 },
+    { name: "G2",  freq: 98.00 },
+    { name: "G#2", freq: 103.83 },
+    { name: "A2",  freq: 110.00 },
+    { name: "A#2", freq: 116.54 },
+    { name: "B2",  freq: 123.47 },
+
+    { name: "C3",  freq: 130.81 },
+    { name: "C#3", freq: 138.59 },
+    { name: "D3",  freq: 146.83 },
+    { name: "D#3", freq: 155.56 },
+    { name: "E3",  freq: 164.81 },
+    { name: "F3",  freq: 174.61 },
+    { name: "F#3", freq: 185.00 },
+    { name: "G3",  freq: 196.00 },
+    { name: "G#3", freq: 207.65 },
+    { name: "A3",  freq: 220.00 },
+    { name: "A#3", freq: 233.08 },
+    { name: "B3",  freq: 246.94 },
+
+    { name: "C4",  freq: 261.63 },
+    { name: "C#4", freq: 277.18 },
+    { name: "D4",  freq: 293.66 },
+    { name: "D#4", freq: 311.13 },
+    { name: "E4",  freq: 329.63 },
+    { name: "F4",  freq: 349.23 },
+    { name: "F#4", freq: 369.99 },
+    { name: "G4",  freq: 392.00 },
+    { name: "G#4", freq: 415.30 },
+    { name: "A4",  freq: 440.00 },
+    { name: "A#4", freq: 466.16 },
+    { name: "B4",  freq: 493.88 },
+
+    { name: "C5",  freq: 523.25 },
+    { name: "C#5", freq: 554.37 },
+    { name: "D5",  freq: 587.33 },
+    { name: "D#5", freq: 622.25 },
+    { name: "E5",  freq: 659.25 },
+    { name: "F5",  freq: 698.46 },
+    { name: "F#5", freq: 739.99 },
+    { name: "G5",  freq: 783.99 },
+    { name: "G#5", freq: 830.61 },
+    { name: "A5",  freq: 880.00 },
+    { name: "A#5", freq: 932.33 },
+    { name: "B5",  freq: 987.77 },
+
+    { name: "C6",  freq: 1046.50 },
+    { name: "C#6", freq: 1108.73 },
+    { name: "D6",  freq: 1174.66 },
+    { name: "D#6", freq: 1244.51 },
+    { name: "E6",  freq: 1318.51 },
+    { name: "F6",  freq: 1396.91 },
+    { name: "F#6", freq: 1479.98 },
+    { name: "G6",  freq: 1567.98 },
+    { name: "G#6", freq: 1661.22 },
+    { name: "A6",  freq: 1760.00 },
+    { name: "A#6", freq: 1864.66 },
+    { name: "B6",  freq: 1975.53 },
+
+    { name: "C7",  freq: 2093.00 },
+  ];
+
+  let currentNotes = [];
+  let keyElements  = [];
+  let randomSequence = [];
+
+  // DOM elements
+  const keyboardDiv       = document.getElementById("keyboard");
+  const lowestNoteSelect  = document.getElementById("lowestNoteSelect");
+  const highestNoteSelect = document.getElementById("highestNoteSelect");
+  const numNotesInput     = document.getElementById("numNotesInput");
+  const nextBtn           = document.getElementById("nextBtn");
+  const playBtn           = document.getElementById("playBtn");
+  const playFirstBtn      = document.getElementById("playFirstBtn");
+
+  // ------------------------------------------------------------
+  // 1) Populate dropdowns for lowest/highest note
+  // ------------------------------------------------------------
+  function populateNoteSelects() {
+    ALL_NOTES.forEach((note, index) => {
+      const optionLow = document.createElement("option");
+      optionLow.value = index;
+      optionLow.textContent = note.name;
+
+      const optionHigh = document.createElement("option");
+      optionHigh.value = index;
+      optionHigh.textContent = note.name;
+
+      lowestNoteSelect.appendChild(optionLow);
+      highestNoteSelect.appendChild(optionHigh);
+    });
+
+    // Default: C3 -> C5
+    const defaultLowest  = ALL_NOTES.findIndex(n => n.name === "C3");
+    const defaultHighest = ALL_NOTES.findIndex(n => n.name === "C5");
+    if (defaultLowest !== -1)  lowestNoteSelect.value  = defaultLowest;
+    if (defaultHighest !== -1) highestNoteSelect.value = defaultHighest;
+  }
+
+  populateNoteSelects();
+
+  // ------------------------------------------------------------
+  // 2) Build the keyboard for the chosen range
+  // ------------------------------------------------------------
+  function buildKeyboard() {
+    // Clear existing
+    keyboardDiv.innerHTML = "";
+    keyElements = [];
+
+    // Parse user-chosen range
+    const lowestIndex  = parseInt(lowestNoteSelect.value, 10);
+    const highestIndex = parseInt(highestNoteSelect.value, 10);
+    if (isNaN(lowestIndex) || isNaN(highestIndex)) return;
+
+    const start = Math.min(lowestIndex, highestIndex);
+    const end   = Math.max(lowestIndex, highestIndex);
+    currentNotes = ALL_NOTES.slice(start, end + 1);
+
+    currentNotes.forEach(note => {
+      const keyDiv = document.createElement("div");
+      keyDiv.classList.add("key");
+
+      if (note.name.includes("#")) {
+        keyDiv.classList.add("black-key");
+      } else {
+        keyDiv.classList.add("white-key");
+      }
+      keyboardDiv.appendChild(keyDiv);
+      keyElements.push(keyDiv);
+    });
+  }
+
+  // ------------------------------------------------------------
+  // 3) Generate random sequence (unique notes)
+  // ------------------------------------------------------------
+  function generateSequence() {
+    // Remove old labels
+    keyElements.forEach(key => {
+      const oldLabel = key.querySelector(".sequence-label");
+      if (oldLabel) {
+        key.removeChild(oldLabel);
+      }
+    });
+
+    randomSequence = [];
+
+    let howMany = parseInt(numNotesInput.value, 10) || 3;
+    if (howMany > currentNotes.length) {
+      howMany = currentNotes.length;
+    }
+
+    // Shuffle array of indices
+    const indices = [...Array(currentNotes.length).keys()];
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+
+    // Pick first howMany
+    const selected = indices.slice(0, howMany);
+    randomSequence = selected.map(idx => ({
+      index: idx,
+      freq: currentNotes[idx].freq
+    }));
+
+    // Label each chosen key
+    randomSequence.forEach((item, i) => {
+      const labelSpan = document.createElement("span");
+      labelSpan.className = "sequence-label";
+      labelSpan.textContent = (i + 1).toString();
+      keyElements[item.index].appendChild(labelSpan);
+    });
+  }
+
+  // ------------------------------------------------------------
+  // Helper: play a single note (with fundamental + overtones)
+  // ------------------------------------------------------------
+  function playOneNote(audioCtx, frequency, startTime, duration) {
+    const stopTime = startTime + duration;
+
+    // Create a main gain that will fade out
+    const mainGain = audioCtx.createGain();
+    mainGain.connect(audioCtx.destination);
+
+    // Fade in quickly from 0 to 1, then down to 0
+    mainGain.gain.setValueAtTime(0, startTime);
+    mainGain.gain.linearRampToValueAtTime(1, startTime + 0.01);
+    mainGain.gain.linearRampToValueAtTime(0, stopTime - 0.01);
+
+    // We'll create sub-gains for each partial so we can set relative volumes
+    // Summing to ~0.2 total if mainGain = 1 at peak
+    const fundGain = audioCtx.createGain();
+    fundGain.gain.value = 0.12; // fundamental
+    fundGain.connect(mainGain);
+
+    const secondGain = audioCtx.createGain();
+    secondGain.gain.value = 0.05; // 2nd harmonic
+    secondGain.connect(mainGain);
+
+    const thirdGain = audioCtx.createGain();
+    thirdGain.gain.value = 0.03; // 3rd harmonic
+    thirdGain.connect(mainGain);
+
+    // Fundamental oscillator
+    const oscFund = audioCtx.createOscillator();
+    oscFund.type = "sine";
+    oscFund.frequency.value = frequency;
+    oscFund.connect(fundGain);
+    oscFund.start(startTime);
+    oscFund.stop(stopTime);
+
+    // 2nd harmonic
+    const osc2 = audioCtx.createOscillator();
+    osc2.type = "sine";
+    osc2.frequency.value = frequency * 2;
+    osc2.connect(secondGain);
+    osc2.start(startTime);
+    osc2.stop(stopTime);
+
+    // 3rd harmonic
+    const osc3 = audioCtx.createOscillator();
+    osc3.type = "sine";
+    osc3.frequency.value = frequency * 3;
+    osc3.connect(thirdGain);
+    osc3.start(startTime);
+    osc3.stop(stopTime);
+  }
+
+  // ------------------------------------------------------------
+  // 4) Play the entire random sequence with fade and partials
+  // ------------------------------------------------------------
+  function playSequence() {
+    if (randomSequence.length === 0) return;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    const noteDuration = 0.8;
+    const gap = 0.1;
+
+    randomSequence.forEach((noteObj, i) => {
+      const startTime = now + i * (noteDuration + gap);
+      playOneNote(audioCtx, noteObj.freq, startTime, noteDuration);
+    });
+  }
+
+  // ------------------------------------------------------------
+  // 5) Play only the first note
+  // ------------------------------------------------------------
+  function playFirstNote() {
+    if (randomSequence.length === 0) return;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    const noteDuration = 1.0;
+
+    const firstFreq = randomSequence[0].freq;
+    playOneNote(audioCtx, firstFreq, now, noteDuration);
+  }
+
+  // ------------------------------------------------------------
+  // On-change events for the note selects
+  // ------------------------------------------------------------
+  lowestNoteSelect.addEventListener("change", () => {
+    buildKeyboard();
+    generateSequence();
+  });
+  highestNoteSelect.addEventListener("change", () => {
+    buildKeyboard();
+    generateSequence();
+  });
+
+  // Buttons
+  nextBtn.addEventListener("click", generateSequence);
+  playBtn.addEventListener("click", playSequence);
+  playFirstBtn.addEventListener("click", playFirstNote);
+
+  // Initial
+  buildKeyboard();
+  generateSequence();
+</script>
+
+</body>
+</html>
