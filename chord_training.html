@@ -66,11 +66,27 @@
       border-radius: 50%;
       background-color: #84ff84; /* greenish */
     }
+
+    /* Small label at the top of each key */
+    .note-label {
+      position: absolute;
+      top: 4px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 0.8em;
+      pointer-events: none; /* allow clicking the key */
+      color: #333;
+    }
+    .black-key .note-label {
+      color: #fff;
+    }
   </style>
 </head>
 <body class="bg-dark text-light">
 <div class="container py-4">
-  <h1 class="text-center mb-4">Chord Practice</h1>
+  <h1 class="text-center mb-2">Chord Practice</h1>
+  <p class="text-center mb-4">Press <strong>New Chord</strong> to generate a random chord. Click keys to match the notes. The pink marker shows the lowest note and green markers show your selections.</p>
 
   <div class="row g-3 align-items-end mb-4">
     <div class="col-md-4">
@@ -94,7 +110,7 @@
   </div>
 
   <div class="mb-4">
-    <button id="nextBtn" class="btn btn-primary me-2">Next</button>
+    <button id="nextBtn" class="btn btn-primary me-2">New Chord</button>
     <button id="playGeneratedBtn" class="btn btn-success me-2">Play Generated Chord</button>
     <button id="playSelectedBtn" class="btn btn-success">Play Selected Notes</button>
   </div>
@@ -245,6 +261,13 @@
       } else {
         keyDiv.classList.add("white-key");
       }
+
+      // Label with note name
+      const label = document.createElement("span");
+      label.className = "note-label";
+      label.textContent = note.name;
+      keyDiv.appendChild(label);
+
       // Add event listener for toggling selection
       keyDiv.addEventListener("click", () => toggleKeySelection(localIdx));
       keyboardDiv.appendChild(keyDiv);
