@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Continuous Ear-Training Interval Practice</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Tuning Practice</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <style>
     body {
-      background-color: #2e2e2e; /* Darker background */
-      color: #ffffff; /* Light text */
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      text-align: center;
+      background-color: #343a40;
+      color: #fff;
+      font-family: sans-serif;
+      margin: 0;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
     }
     #intervalDisplay {
       font-size: 1.2em;
@@ -17,27 +22,26 @@
     }
     #sliderContainer {
       position: relative;
-      width: 80%;
+      width: 100%;
       margin: 30px auto;
     }
-    /* Make the slider track bigger and the thumb a vertical bar for easier grabbing */
     #pitchSlider {
-      -webkit-appearance: none; /* Removes default Chrome/Safari style */
+      -webkit-appearance: none;
       width: 100%;
-      height: 6px;         /* Track height */
-      background: #444;    /* Track color */
+      height: 6px;
+      background: #444;
       border-radius: 3px;
-      outline: none;       /* No outline on focus */
+      outline: none;
       cursor: pointer;
     }
     #pitchSlider::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 12px;         /* Thumb width */
-      height: 30px;        /* Thumb height */
-      background: #888;    /* Thumb color */
+      width: 12px;
+      height: 30px;
+      background: #888;
       border-radius: 2px;
       cursor: pointer;
-      margin-top: -12px;   /* Align thumb vertically on the track */
+      margin-top: -12px;
     }
     #pitchSlider::-moz-range-thumb {
       width: 12px;
@@ -46,91 +50,74 @@
       border-radius: 2px;
       cursor: pointer;
     }
-
-    /* Vertical line to show the correct pitch */
     #correctLine {
       position: absolute;
       top: 0;
       bottom: 0;
       width: 2px;
       background-color: red;
-      display: none; /* Hidden by default, toggled on/off */
+      display: none;
     }
     #centsDifference {
-      display: none; /* Show/Hide with the same toggle button */
+      display: none;
       margin-top: 10px;
       font-weight: bold;
     }
-
     button {
       margin: 5px;
-      padding: 6px 12px;
-      background-color: #444;
-      color: #fff;
-      border: 1px solid #666;
-      cursor: pointer;
     }
     button.active {
-      background-color: #880; /* highlight color when 'on' */
+      background-color: #880;
     }
-
-    /* Results area */
     #resultsContainer {
       margin-top: 30px;
-      /* border-top: 1px solid #666; */
       padding-top: 10px;
-      width: 80%;
-      margin-left: auto;
-      margin-right: auto;
+      width: 100%;
       text-align: left;
     }
     #resultsContainer h3 {
       margin-bottom: 10px;
     }
-    /* Table for aligning results in two columns */
     #resultsTable {
       width: 100%;
-      border-collapse: collapse; /* no visible lines */
+      border-collapse: collapse;
     }
     #resultsTable td {
       padding: 2px 5px;
     }
-    /* First column left-aligned, second column right-aligned */
     #resultsTable td:nth-child(1) {
       text-align: left;
     }
     #resultsTable td:nth-child(2) {
       text-align: right;
     }
+    @media (max-width: 576px) {
+      h1 { font-size: 1.5rem; }
+    }
   </style>
 </head>
-<body>
-
-<h1>Continuous Interval Ear Training</h1>
-
-<div id="intervalDisplay"></div>
-
-<!-- All buttons are now enabled from the start; no dedicated sound button -->
-<button id="toggleRootBtn">Tone 1</button>
-<button id="toggleUserBtn">Tone 2</button>
-<button id="toggleCheckBtn">Check</button>
-<button id="newIntervalBtn">New</button>
-<button id="moveToCorrectBtn">Correct</button>
-<button id="moveToJustBtn">Correct Just</button>
-
-<div id="sliderContainer">
-  <input type="range" id="pitchSlider" min="0" max="1" step="any">
-  <div id="correctLine"></div>
+<body class="bg-dark text-light">
+<div class="container py-4">
+  <h1 class="text-center mb-4">Tuning Practice</h1>
+  <div id="intervalDisplay" class="mb-3"></div>
+  <div class="mb-3">
+    <button id="toggleRootBtn" class="btn btn-primary me-2 mb-2">Tone 1</button>
+    <button id="toggleUserBtn" class="btn btn-primary me-2 mb-2">Tone 2</button>
+    <button id="toggleCheckBtn" class="btn btn-secondary me-2 mb-2">Check</button>
+    <button id="newIntervalBtn" class="btn btn-success me-2 mb-2">New</button>
+    <button id="moveToCorrectBtn" class="btn btn-warning me-2 mb-2">Correct</button>
+    <button id="moveToJustBtn" class="btn btn-warning mb-2">Correct Just</button>
+  </div>
+  <div id="sliderContainer" class="mb-3">
+    <input type="range" id="pitchSlider" min="0" max="1" step="any" class="form-range">
+    <div id="correctLine"></div>
+  </div>
+  <div id="centsDifference" class="mb-3"></div>
+  <div id="resultsContainer">
+    <h3>Results</h3>
+    <div id="resultsList"></div>
+  </div>
 </div>
-
-<div id="centsDifference"></div>
-
-<!-- Results area (always visible) -->
-<div id="resultsContainer">
-  <h3>Results</h3>
-  <div id="resultsList"></div>
-</div>
-
 <script>
 /*
  * Configuration
