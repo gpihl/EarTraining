@@ -217,8 +217,8 @@
   let selectedKeys = new Set();  // A set of indices that the user has selected
   let lowestChordIndex = null;   // The index (into currentNotes) of the chord's lowest note
 
-  const generatedPlayback = { ctx: null, gain: null, oscillators: [] };
-  const selectedPlayback  = { ctx: null, gain: null, oscillators: [] };
+  const generatedPlayback = { ctx: null, gain: null, oscillators: [], stopTimeout: null, isFadingOut: false };
+  const selectedPlayback  = { ctx: null, gain: null, oscillators: [], stopTimeout: null, isFadingOut: false };
 
   // Fade times for chord playback (seconds)
   const FADE_IN_TIME  = 0.3;
@@ -406,8 +406,24 @@
   //------------------------------------------------------------
   function startChordPlayback(state, frequencies) {
     if (!frequencies || frequencies.length === 0) return;
+
+    // If we're currently fading out, cancel that fade and ramp back up
+    if (state.ctx && state.isFadingOut) {
+      if (state.stopTimeout) {
+        clearTimeout(state.stopTimeout);
+        state.stopTimeout = null;
+      }
+      state.isFadingOut = false;
+      const now = state.ctx.currentTime;
+      state.gain.gain.cancelScheduledValues(now);
+      state.gain.gain.setValueAtTime(Math.max(state.gain.gain.value, 0.0001), now);
+      state.gain.gain.exponentialRampToValueAtTime(1, now + FADE_IN_TIME);
+      return;
+    }
+
     stopChordPlayback(state);
 
+    state.isFadingOut = false;
     state.ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = state.ctx.currentTime;
 
@@ -455,19 +471,29 @@
   function stopChordPlayback(state) {
     if (!state.ctx) return;
     const now = state.ctx.currentTime;
+    state.isFadingOut = true;
     state.gain.gain.cancelScheduledValues(now);
     state.gain.gain.setValueAtTime(state.gain.gain.value, now);
     state.gain.gain.exponentialRampToValueAtTime(0.0001, now + FADE_OUT_TIME);
-    state.oscillators.forEach(osc => {
-      try { osc.stop(now + FADE_OUT_TIME); } catch (e) {}
-    });
-    setTimeout(() => {
-      if (state.ctx) {
-        state.ctx.close();
+
+    if (state.stopTimeout) {
+      clearTimeout(state.stopTimeout);
+    }
+
+    const ctx = state.ctx;
+    const oscs = state.oscillators;
+    state.stopTimeout = setTimeout(() => {
+      oscs.forEach(osc => {
+        try { osc.stop(); } catch (e) {}
+      });
+      try { ctx.close(); } catch (e) {}
+      if (state.ctx === ctx) {
         state.ctx = null;
         state.gain = null;
         state.oscillators = [];
       }
+      state.stopTimeout = null;
+      state.isFadingOut = false;
     }, (FADE_OUT_TIME + 0.05) * 1000);
   }
 
