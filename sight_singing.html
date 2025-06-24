@@ -2,54 +2,54 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Sight-Singing Practice</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <style>
-    /* Dark background for the entire page */
     body {
-      background-color: #333;
+      background-color: #343a40;
       color: #fff;
       font-family: sans-serif;
-      margin: 20px;
-    }
-    .controls {
-      margin-bottom: 20px;
-    }
-    .controls label {
-      margin-right: 10px;
+      margin: 0;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
     }
     #keyboard {
       white-space: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 10px;
     }
     .key {
       display: inline-block;
-      position: relative; /* for placing label absolutely */
+      position: relative;
       box-sizing: border-box;
       user-select: none;
       border: 1px solid #666;
       margin: 0;
+      overflow: hidden;
     }
-    /* White keys: aligned at bottom */
     .white-key {
-      width: 40px;
-      height: 150px;
+      width: 60px;
+      height: 225px;
       background: #fff;
       vertical-align: bottom;
       z-index: 1;
     }
-    /* Black keys: aligned at top */
     .black-key {
-      width: 25px;
-      height: 100px;
+      width: 38px;
+      height: 150px;
       background: #000;
       color: #fff;
       vertical-align: top;
       z-index: 2;
-      margin: 0 -12px; /* overlap for a piano-like look */
+      margin: 0 -18px;
     }
-    /* Number labels at the bottom of each key */
     .sequence-label {
       position: absolute;
-      bottom: 5px;
+      bottom: 8px;
       left: 0;
       right: 0;
       text-align: center;
@@ -57,30 +57,62 @@
       font-size: 1.2em;
       color: #ff8484;
     }
+
+    @media (max-width: 576px) {
+      .white-key {
+        width: 40px;
+        height: 170px;
+      }
+      .black-key {
+        width: 25px;
+        height: 110px;
+        margin: 0 -12px;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      .sequence-label {
+        bottom: 4px;
+        font-size: 1em;
+      }
+      .control-buttons .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+      .control-buttons .btn:last-child {
+        margin-bottom: 0;
+      }
+    }
   </style>
 </head>
-<body>
+<body class="bg-dark text-light">
+<div class="container py-4">
+  <h1 class="text-center mb-4">Sight-Singing Practice</h1>
 
-<h1>Sight-Singing Practice</h1>
+  <div class="row g-3 align-items-end mb-4">
+    <div class="col-md-4">
+      <label for="lowestNoteSelect" class="form-label">Lowest Note</label>
+      <select id="lowestNoteSelect" class="form-select form-select-sm"></select>
+    </div>
+    <div class="col-md-4">
+      <label for="highestNoteSelect" class="form-label">Highest Note</label>
+      <select id="highestNoteSelect" class="form-select form-select-sm"></select>
+    </div>
+    <div class="col-md-4">
+      <label for="numNotesInput" class="form-label"># of Notes</label>
+      <input type="number" id="numNotesInput" value="3" min="1" max="50" class="form-control form-control-sm">
+    </div>
+  </div>
 
-<div class="controls">
-  <label for="lowestNoteSelect">Lowest Note:</label>
-  <select id="lowestNoteSelect"></select>
+  <div class="mb-4 control-buttons">
+    <button id="nextBtn" class="btn btn-primary me-2">Next</button>
+    <button id="playBtn" class="btn btn-success me-2">Play</button>
+    <button id="playFirstBtn" class="btn btn-success">Play First</button>
+  </div>
 
-  <label for="highestNoteSelect">Highest Note:</label>
-  <select id="highestNoteSelect"></select>
-
-  <label for="numNotesInput"># of Notes:</label>
-  <input type="number" id="numNotesInput" value="3" min="1" max="50" style="width:60px;">
+  <div id="keyboard" class="mb-3"></div>
 </div>
-
-<div class="controls">
-  <button id="nextBtn">Next</button>
-  <button id="playBtn">Play</button>
-  <button id="playFirstBtn">Play First</button>
-</div>
-
-<div id="keyboard"></div>
 
 <script>
   // Extended note list from C2 up to C7
