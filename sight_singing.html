@@ -61,7 +61,7 @@
 
   populateNoteSelects(ALL_NOTES, lowestNoteSelect, highestNoteSelect, "C3", "C5");
 
-  const player = new Sound.SequencePlayer();
+  const player = new Sound.SequencePlayer({reverbWet:0.25});
 
   // ------------------------------------------------------------
   // 2) Build the keyboard for the chosen range

@@ -61,8 +61,8 @@
   let selectedKeys = new Set();
   let lowestChordIndex = null;
 
-  const generatedPlayback = new Sound.ChordPlayer({attack:0.3, release:0.7});
-  const selectedPlayback  = new Sound.ChordPlayer({attack:0.3, release:0.7});
+  const generatedPlayback = new Sound.ChordPlayer({attack:0.3, release:0.7, reverbWet:0.25});
+  const selectedPlayback  = new Sound.ChordPlayer({attack:0.3, release:0.7, reverbWet:0.25});
 
   const keyboardDiv       = document.getElementById("keyboard");
   const lowestNoteSelect  = document.getElementById("lowestNoteSelect");
