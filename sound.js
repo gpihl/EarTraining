@@ -296,8 +296,13 @@
       this.noteGains.forEach((arr) => {
         arr.forEach((gain) => {
           gain.gain.cancelScheduledValues(now);
-          gain.gain.setValueAtTime(gain.gain.value, now);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + this.release);
+          const value = gain.gain.value;
+          if (value > 0) {
+            gain.gain.setValueAtTime(value, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + this.release);
+          } else {
+            gain.gain.setValueAtTime(0, now);
+          }
         });
       });
 
