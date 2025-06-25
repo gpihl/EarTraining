@@ -78,19 +78,36 @@
       this.reverbDecay = opts.reverbDecay || 2;
       this.ctx=null;this.gain=null;this.oscillators=[];this.stopTimeout=null;this.isFadingOut=false;
       this.reverbNode=null;this.wetGain=null;
+      this.currentFreqs=null;
     }
+
+  _immediateCleanup(){
+      if(!this.ctx) return;
+      if(this.stopTimeout){clearTimeout(this.stopTimeout);this.stopTimeout=null;}
+      this.oscillators.forEach(o=>{try{o.stop();}catch(e){}});
+      const ctx=this.ctx;
+      try{ctx.close();}catch(e){}
+      this.ctx=null;this.gain=null;this.oscillators=[];this.reverbNode=null;this.wetGain=null;
+      this.isFadingOut=false;
+      this.currentFreqs=null;
+  }
     start(freqs){
       if(!freqs || !freqs.length) return;
-      if(this.ctx && this.isFadingOut){
-        if(this.stopTimeout){clearTimeout(this.stopTimeout);this.stopTimeout=null;}
-        this.isFadingOut=false;
-        const n=this.ctx.currentTime;
-        this.gain.gain.cancelScheduledValues(n);
-        this.gain.gain.setValueAtTime(Math.max(this.gain.gain.value,0.0001),n);
-        this.gain.gain.exponentialRampToValueAtTime(1,n+this.attack);
-        return;
+      const same=this.currentFreqs && this.currentFreqs.length===freqs.length && this.currentFreqs.every((f,i)=>f===freqs[i]);
+      if(this.ctx){
+        if(same){
+          if(this.isFadingOut){
+            if(this.stopTimeout){clearTimeout(this.stopTimeout);this.stopTimeout=null;}
+            this.isFadingOut=false;
+            const n=this.ctx.currentTime;
+            this.gain.gain.cancelScheduledValues(n);
+            this.gain.gain.setValueAtTime(Math.max(this.gain.gain.value,0.0001),n);
+            this.gain.gain.exponentialRampToValueAtTime(1,n+this.attack);
+          }
+          return;
+        }
+        this._immediateCleanup();
       }
-      this.stop();
       this.ctx=new (window.AudioContext||window.webkitAudioContext)();
       const n=this.ctx.currentTime;
       this.gain=this.ctx.createGain();
@@ -113,9 +130,14 @@
           this.oscillators.push(o);
         });
       });
+      this.currentFreqs=freqs.slice();
     }
-    stop(){
+    stop(immediate=false){
       if(!this.ctx) return;
+      if(immediate){
+        this._immediateCleanup();
+        return;
+      }
       const n=this.ctx.currentTime;
       this.isFadingOut=true;
       this.gain.gain.cancelScheduledValues(n);
@@ -127,7 +149,7 @@
       this.stopTimeout=setTimeout(()=>{
         oscs.forEach(o=>{try{o.stop();}catch(e){}});
         try{ctx.close();}catch(e){}
-        if(this.ctx===ctx){this.ctx=null;this.gain=null;this.oscillators=[];this.reverbNode=null;this.wetGain=null;}
+        if(this.ctx===ctx){this.ctx=null;this.gain=null;this.oscillators=[];this.reverbNode=null;this.wetGain=null;this.currentFreqs=null;}
         this.stopTimeout=null;this.isFadingOut=false;},(this.release+extra+0.05)*1000);
     }
   }
