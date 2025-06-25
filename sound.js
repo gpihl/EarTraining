@@ -114,7 +114,6 @@
       this.gain = null;
       this.noteFreqs = [];
       this.noteGains = [];
-      this.noteOscillators = [];
       this._freqTol = 1e-2; // frequency matching tolerance
       this.stopTimeout = null;
       this.isFadingOut = false;
@@ -146,7 +145,6 @@
         this.noteFreqs.push(freq);
 
         const gains = [];
-        const oscs = [];
         this.overtoneAmps.forEach((amp, idx) => {
           const gain = this.context.createGain();
           gain.gain.value = 0;
@@ -159,11 +157,10 @@
           osc.start();
 
           gains.push(gain);
-          oscs.push(osc);
+          // oscillator reference isn't stored; it will keep running as part of the graph
         });
 
         this.noteGains.push(gains);
-        this.noteOscillators.push(oscs);
       }
 
       this.gain.gain.setValueAtTime(0.0001, this.context.currentTime);
@@ -178,43 +175,6 @@
       return -1;
     }
 
-    _immediateCleanup() {
-      if (!this.context) {
-        return;
-      }
-
-      if (this.stopTimeout) {
-        clearTimeout(this.stopTimeout);
-        this.stopTimeout = null;
-      }
-
-      this.noteOscillators.forEach((arr) => {
-        arr.forEach((osc) => {
-          try {
-            osc.stop();
-          } catch (err) {
-            // ignore
-          }
-        });
-      });
-
-      const context = this.context;
-      try {
-        context.close();
-      } catch (err) {
-        // ignore
-      }
-
-      this.context = null;
-      this.gain = null;
-      this.noteFreqs = [];
-      this.noteGains = [];
-      this.noteOscillators = [];
-      this.reverbNode = null;
-      this.wetGain = null;
-      this.isFadingOut = false;
-      this.currentFreqs = null;
-    }
 
     start(frequencies) {
       if (!frequencies || frequencies.length === 0) {
