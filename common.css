@@ -21,7 +21,7 @@ body {
   position: relative;
   box-sizing: border-box;
   user-select: none;
-  border: 1px solid #666;
+  border: 1px solid #000000;
   margin: 0;
   overflow: hidden;
 }
