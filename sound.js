@@ -246,6 +246,16 @@
           this.gain.gain.cancelScheduledValues(now);
           this.gain.gain.setValueAtTime(Math.max(this.gain.gain.value, 0.0001), now);
           this.gain.gain.exponentialRampToValueAtTime(1, now + this.attack);
+
+          frequencies.forEach((freq) => {
+            const idx = this._findFreqIndex(freq);
+            if (idx !== -1) {
+              this.noteGains[idx].forEach((gain, i) => {
+                gain.gain.cancelScheduledValues(now);
+                gain.gain.setValueAtTime(this.overtoneAmps[i], now);
+              });
+            }
+          });
         }
       } else {
         this.noteGains.forEach((arr) => {
