@@ -107,83 +107,26 @@
       this.reverbSeconds = options.reverbSeconds || 2;
       this.reverbDecay = options.reverbDecay || 2;
 
+      this.lowestMidi = options.lowestMidi || 36;  // C2
+      this.highestMidi = options.highestMidi || 96; // C7
+
       this.context = null;
       this.gain = null;
-      this.oscillators = [];
+      this.noteFreqs = [];
+      this.noteGains = [];
+      this.noteOscillators = [];
       this.stopTimeout = null;
       this.isFadingOut = false;
 
       this.reverbNode = null;
       this.wetGain = null;
       this.currentFreqs = null;
+
+      this._setupContext();
     }
 
-    _immediateCleanup() {
-      if (!this.context) {
-        return;
-      }
-
-      if (this.stopTimeout) {
-        clearTimeout(this.stopTimeout);
-        this.stopTimeout = null;
-      }
-
-      this.oscillators.forEach((oscillator) => {
-        try {
-          oscillator.stop();
-        } catch (err) {
-          // ignore
-        }
-      });
-
-      const context = this.context;
-      try {
-        context.close();
-      } catch (err) {
-        // ignore
-      }
-
-      this.context = null;
-      this.gain = null;
-      this.oscillators = [];
-      this.reverbNode = null;
-      this.wetGain = null;
-      this.isFadingOut = false;
-      this.currentFreqs = null;
-    }
-
-    start(frequencies) {
-      if (!frequencies || frequencies.length === 0) {
-        return;
-      }
-
-      const same =
-        this.currentFreqs &&
-        this.currentFreqs.length === frequencies.length &&
-        this.currentFreqs.every((freq, index) => freq === frequencies[index]);
-
-      if (this.context) {
-        if (same) {
-          if (this.isFadingOut) {
-            if (this.stopTimeout) {
-              clearTimeout(this.stopTimeout);
-              this.stopTimeout = null;
-            }
-            this.isFadingOut = false;
-
-            const now = this.context.currentTime;
-            this.gain.gain.cancelScheduledValues(now);
-            this.gain.gain.setValueAtTime(Math.max(this.gain.gain.value, 0.0001), now);
-            this.gain.gain.exponentialRampToValueAtTime(1, now + this.attack);
-          }
-          return;
-        }
-        this._immediateCleanup();
-      }
-
+    _setupContext() {
       this.context = new (window.AudioContext || window.webkitAudioContext)();
-      const now = this.context.currentTime;
-
       this.gain = this.context.createGain();
       this.gain.connect(this.context.destination);
 
@@ -196,19 +139,124 @@
         this.gain.connect(this.reverbNode);
       }
 
-      this.gain.gain.setValueAtTime(0.0001, now);
-      this.gain.gain.exponentialRampToValueAtTime(1, now + this.attack);
-      this.oscillators = [];
+      const noteCount = this.highestMidi - this.lowestMidi + 1;
+      for (let i = 0; i < noteCount; i++) {
+        const midi = this.lowestMidi + i;
+        const freq = 440 * Math.pow(2, (midi - 69) / 12);
+        this.noteFreqs.push(freq);
 
-      frequencies.forEach((frequency) => {
-        this.overtoneAmps.forEach((amp, index) => {
-          const oscillator = createOvertoneOsc(this.context, frequency, index + 1, amp, this.gain);
-          oscillator.start(now);
-          this.oscillators.push(oscillator);
+        const gains = [];
+        const oscs = [];
+        this.overtoneAmps.forEach((amp, idx) => {
+          const gain = this.context.createGain();
+          gain.gain.value = 0;
+          gain.connect(this.gain);
+
+          const osc = this.context.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.value = freq * (idx + 1);
+          osc.connect(gain);
+          osc.start();
+
+          gains.push(gain);
+          oscs.push(osc);
+        });
+
+        this.noteGains.push(gains);
+        this.noteOscillators.push(oscs);
+      }
+
+      this.gain.gain.setValueAtTime(0.0001, this.context.currentTime);
+    }
+
+    _immediateCleanup() {
+      if (!this.context) {
+        return;
+      }
+
+      if (this.stopTimeout) {
+        clearTimeout(this.stopTimeout);
+        this.stopTimeout = null;
+      }
+
+      this.noteOscillators.forEach((arr) => {
+        arr.forEach((osc) => {
+          try {
+            osc.stop();
+          } catch (err) {
+            // ignore
+          }
         });
       });
 
-      this.currentFreqs = frequencies.slice();
+      const context = this.context;
+      try {
+        context.close();
+      } catch (err) {
+        // ignore
+      }
+
+      this.context = null;
+      this.gain = null;
+      this.noteFreqs = [];
+      this.noteGains = [];
+      this.noteOscillators = [];
+      this.reverbNode = null;
+      this.wetGain = null;
+      this.isFadingOut = false;
+      this.currentFreqs = null;
+    }
+
+    start(frequencies) {
+      if (!frequencies || frequencies.length === 0) {
+        return;
+      }
+
+      if (!this.context) {
+        this._setupContext();
+      }
+
+      const same =
+        this.currentFreqs &&
+        this.currentFreqs.length === frequencies.length &&
+        this.currentFreqs.every((freq, index) => freq === frequencies[index]);
+
+      const now = this.context.currentTime;
+
+      if (same) {
+        if (this.isFadingOut) {
+          if (this.stopTimeout) {
+            clearTimeout(this.stopTimeout);
+            this.stopTimeout = null;
+          }
+          this.isFadingOut = false;
+          this.gain.gain.cancelScheduledValues(now);
+          this.gain.gain.setValueAtTime(Math.max(this.gain.gain.value, 0.0001), now);
+          this.gain.gain.exponentialRampToValueAtTime(1, now + this.attack);
+        }
+      } else {
+        this.noteGains.forEach((arr) => {
+          arr.forEach((gain) => {
+            gain.gain.cancelScheduledValues(now);
+            gain.gain.setValueAtTime(0, now);
+          });
+        });
+
+        frequencies.forEach((frequency) => {
+          const idx = this.noteFreqs.indexOf(frequency);
+          if (idx !== -1) {
+            this.noteGains[idx].forEach((gain, i) => {
+              gain.gain.setValueAtTime(this.overtoneAmps[i], now);
+            });
+          }
+        });
+
+        this.gain.gain.cancelScheduledValues(now);
+        this.gain.gain.setValueAtTime(Math.max(this.gain.gain.value, 0.0001), now);
+        this.gain.gain.exponentialRampToValueAtTime(1, now + this.attack);
+
+        this.currentFreqs = frequencies.slice();
+      }
     }
 
     stop(immediate = false) {
@@ -216,53 +264,59 @@
         return;
       }
 
+      const now = this.context.currentTime;
+
       if (immediate) {
-        this._immediateCleanup();
+        if (this.stopTimeout) {
+          clearTimeout(this.stopTimeout);
+          this.stopTimeout = null;
+        }
+
+        this.noteGains.forEach((arr) => {
+          arr.forEach((gain) => {
+            gain.gain.cancelScheduledValues(now);
+            gain.gain.setValueAtTime(0, now);
+          });
+        });
+
+        this.gain.gain.cancelScheduledValues(now);
+        this.gain.gain.setValueAtTime(0.0001, now);
+
+        this.isFadingOut = false;
+        this.currentFreqs = null;
         return;
       }
 
-      const now = this.context.currentTime;
       this.isFadingOut = true;
 
       this.gain.gain.cancelScheduledValues(now);
       this.gain.gain.setValueAtTime(this.gain.gain.value, now);
       this.gain.gain.exponentialRampToValueAtTime(0.0001, now + this.release);
 
+      this.noteGains.forEach((arr) => {
+        arr.forEach((gain) => {
+          gain.gain.cancelScheduledValues(now);
+          gain.gain.setValueAtTime(gain.gain.value, now);
+          gain.gain.exponentialRampToValueAtTime(0, now + this.release);
+        });
+      });
+
       if (this.stopTimeout) {
         clearTimeout(this.stopTimeout);
       }
 
-      const context = this.context;
-      const oscillators = this.oscillators;
       const extra = this.reverbWet > 0 ? this.reverbSeconds : 0;
       const wait = (this.release + extra + 0.05) * 1000;
 
       this.stopTimeout = setTimeout(() => {
-        oscillators.forEach((oscillator) => {
-          try {
-            oscillator.stop();
-          } catch (err) {
-            // ignore
-          }
+        this.noteGains.forEach((arr) => {
+          arr.forEach((gain) => {
+            gain.gain.setValueAtTime(0, this.context.currentTime);
+          });
         });
-
-        try {
-          context.close();
-        } catch (err) {
-          // ignore
-        }
-
-        if (this.context === context) {
-          this.context = null;
-          this.gain = null;
-          this.oscillators = [];
-          this.reverbNode = null;
-          this.wetGain = null;
-          this.currentFreqs = null;
-        }
-
-        this.stopTimeout = null;
         this.isFadingOut = false;
+        this.stopTimeout = null;
+        this.currentFreqs = null;
       }, wait);
     }
   }
