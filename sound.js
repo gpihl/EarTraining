@@ -122,7 +122,6 @@
       this.wetGain = null;
       this.currentFreqs = null;
 
-      this._setupContext();
     }
 
     _setupContext() {
@@ -214,6 +213,8 @@
 
       if (!this.context) {
         this._setupContext();
+      } else if (this.context.state === 'suspended') {
+        this.context.resume();
       }
 
       const same =
