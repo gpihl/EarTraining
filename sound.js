@@ -49,6 +49,9 @@
         this._playOne(ctx,f,t,dur,convolver);
         t += dur + gap;
       });
+      const endTime=t-gap;
+      const extra=this.reverbWet>0?this.reverbSeconds:0;
+      setTimeout(()=>{try{ctx.close();}catch(e){}},(endTime-ctx.currentTime+extra+0.05)*1000);
     }
     _playOne(ctx,freq,start,dur,convolver){
       const stop=start+dur;
@@ -120,11 +123,12 @@
       this.gain.gain.exponentialRampToValueAtTime(0.0001,n+this.release);
       if(this.stopTimeout) clearTimeout(this.stopTimeout);
       const ctx=this.ctx, oscs=this.oscillators;
+      const extra=this.reverbWet>0?this.reverbSeconds:0;
       this.stopTimeout=setTimeout(()=>{
         oscs.forEach(o=>{try{o.stop();}catch(e){}});
         try{ctx.close();}catch(e){}
         if(this.ctx===ctx){this.ctx=null;this.gain=null;this.oscillators=[];this.reverbNode=null;this.wetGain=null;}
-        this.stopTimeout=null;this.isFadingOut=false;},(this.release+0.05)*1000);
+        this.stopTimeout=null;this.isFadingOut=false;},(this.release+extra+0.05)*1000);
     }
   }
 
