@@ -70,7 +70,8 @@
   populateNoteSelects(ALL_NOTES, lowestNoteSelect, highestNoteSelect, "C3", "C5");
 
   const player = new Sound.SequencePlayer({
-    overtoneAmps: [0.20, 0.10, 0.05, 0.03]
+    overtoneAmps: [0.20, 0.10, 0.05, 0.03],
+    reverbWet: 0.25
   });
 
   //-----------------------------------------------------------
