@@ -115,6 +115,7 @@
       this.noteFreqs = [];
       this.noteGains = [];
       this.noteOscillators = [];
+      this._freqTol = 1e-2; // frequency matching tolerance
       this.stopTimeout = null;
       this.isFadingOut = false;
 
@@ -166,6 +167,15 @@
       }
 
       this.gain.gain.setValueAtTime(0.0001, this.context.currentTime);
+    }
+
+    _findFreqIndex(frequency) {
+      for (let i = 0; i < this.noteFreqs.length; i++) {
+        if (Math.abs(this.noteFreqs[i] - frequency) < this._freqTol) {
+          return i;
+        }
+      }
+      return -1;
     }
 
     _immediateCleanup() {
@@ -220,7 +230,9 @@
       const same =
         this.currentFreqs &&
         this.currentFreqs.length === frequencies.length &&
-        this.currentFreqs.every((freq, index) => freq === frequencies[index]);
+        this.currentFreqs.every(
+          (freq, index) => Math.abs(freq - frequencies[index]) < this._freqTol
+        );
 
       const now = this.context.currentTime;
 
@@ -244,7 +256,7 @@
         });
 
         frequencies.forEach((frequency) => {
-          const idx = this.noteFreqs.indexOf(frequency);
+          const idx = this._findFreqIndex(frequency);
           if (idx !== -1) {
             this.noteGains[idx].forEach((gain, i) => {
               gain.gain.setValueAtTime(this.overtoneAmps[i], now);
