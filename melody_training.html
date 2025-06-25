@@ -49,6 +49,7 @@
 </div>
 
 <script src="common.js"></script>
+<script src="sound.js"></script>
 <script>
   // Build note list from E1 up to C7
   const ALL_NOTES = generateNotes(28, 96);
@@ -67,6 +68,10 @@
   const playUserBtn       = document.getElementById("playUserBtn");
 
   populateNoteSelects(ALL_NOTES, lowestNoteSelect, highestNoteSelect, "C3", "C5");
+
+  const player = new Sound.SequencePlayer({
+    overtoneAmps: [0.20, 0.10, 0.05, 0.03]
+  });
 
   //-----------------------------------------------------------
   // 2) Build the keyboard for the chosen range
@@ -186,46 +191,10 @@
   }
 
   //-----------------------------------------------------------
-  // 4) Playback: plays notes in sequence
-  //    We'll define a utility function to play an array of frequencies in sequence
+  // 4) Playback using SequencePlayer
   //-----------------------------------------------------------
-  function playMelodySequence(melodyArray) {
-    if (!melodyArray || melodyArray.length === 0) return;
-
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    let now = audioCtx.currentTime;
-    const noteDuration = 0.6;
-    const gap = 0.1;
-
-    melodyArray.forEach((freq, idx) => {
-      playOneNote(audioCtx, freq, now, noteDuration);
-      now += noteDuration + gap;
-    });
-  }
-
-  // A helper function: plays one note with a short fade in/out and partials
-  function playOneNote(audioCtx, frequency, startTime, duration) {
-    const stopTime = startTime + duration;
-    const mainGain = audioCtx.createGain();
-    mainGain.connect(audioCtx.destination);
-
-    mainGain.gain.setValueAtTime(0, startTime);
-    mainGain.gain.linearRampToValueAtTime(1, startTime + 0.01);
-    mainGain.gain.linearRampToValueAtTime(0, stopTime - 0.01);
-
-    const amps = [0.20, 0.10, 0.05, 0.03];
-    amps.forEach((amp, i) => {
-      const gain = audioCtx.createGain();
-      gain.gain.value = amp;
-      gain.connect(mainGain);
-
-      const osc = audioCtx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = frequency * (i + 1);
-      osc.connect(gain);
-      osc.start(startTime);
-      osc.stop(stopTime);
-    });
+  function playMelodySequence(arr) {
+    player.playSequence(arr, 0.6, 0.1);
   }
 
   //-----------------------------------------------------------

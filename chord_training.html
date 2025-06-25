@@ -50,6 +50,7 @@
 </div>
 
 <script src="common.js"></script>
+<script src="sound.js"></script>
 <script>
   // Create note list from C2 up to C7
   const ALL_NOTES = generateNotes(36, 96);
@@ -60,11 +61,8 @@
   let selectedKeys = new Set();
   let lowestChordIndex = null;
 
-  const generatedPlayback = { ctx: null, gain: null, oscillators: [], stopTimeout: null, isFadingOut: false };
-  const selectedPlayback  = { ctx: null, gain: null, oscillators: [], stopTimeout: null, isFadingOut: false };
-
-  const FADE_IN_TIME  = 0.3;
-  const FADE_OUT_TIME = 0.7;
+  const generatedPlayback = new Sound.ChordPlayer({attack:0.3, release:0.7});
+  const selectedPlayback  = new Sound.ChordPlayer({attack:0.3, release:0.7});
 
   const keyboardDiv       = document.getElementById("keyboard");
   const lowestNoteSelect  = document.getElementById("lowestNoteSelect");
@@ -200,84 +198,6 @@
     });
   }
 
-  //------------------------------------------------------------
-  // Start/stop playback for a set of frequencies
-  //------------------------------------------------------------
-  function startChordPlayback(state, frequencies) {
-    if (!frequencies || frequencies.length === 0) return;
-
-    // If we're currently fading out, cancel that fade and ramp back up
-    if (state.ctx && state.isFadingOut) {
-      if (state.stopTimeout) {
-        clearTimeout(state.stopTimeout);
-        state.stopTimeout = null;
-      }
-      state.isFadingOut = false;
-      const now = state.ctx.currentTime;
-      state.gain.gain.cancelScheduledValues(now);
-      state.gain.gain.setValueAtTime(Math.max(state.gain.gain.value, 0.0001), now);
-      state.gain.gain.exponentialRampToValueAtTime(1, now + FADE_IN_TIME);
-      return;
-    }
-
-    stopChordPlayback(state);
-
-    state.isFadingOut = false;
-    state.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const now = state.ctx.currentTime;
-
-    state.gain = state.ctx.createGain();
-    state.gain.connect(state.ctx.destination);
-    state.gain.gain.setValueAtTime(0.0001, now);
-    state.gain.gain.exponentialRampToValueAtTime(1, now + FADE_IN_TIME);
-
-    state.oscillators = [];
-    const amps = [0.12, 0.05, 0.03];
-    frequencies.forEach(freq => {
-      amps.forEach((amp, i) => {
-        const gain = state.ctx.createGain();
-        gain.gain.value = amp;
-        gain.connect(state.gain);
-
-        const osc = state.ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.value = freq * (i + 1);
-        osc.connect(gain);
-        osc.start(now);
-
-        state.oscillators.push(osc);
-      });
-    });
-  }
-
-  function stopChordPlayback(state) {
-    if (!state.ctx) return;
-    const now = state.ctx.currentTime;
-    state.isFadingOut = true;
-    state.gain.gain.cancelScheduledValues(now);
-    state.gain.gain.setValueAtTime(state.gain.gain.value, now);
-    state.gain.gain.exponentialRampToValueAtTime(0.0001, now + FADE_OUT_TIME);
-
-    if (state.stopTimeout) {
-      clearTimeout(state.stopTimeout);
-    }
-
-    const ctx = state.ctx;
-    const oscs = state.oscillators;
-    state.stopTimeout = setTimeout(() => {
-      oscs.forEach(osc => {
-        try { osc.stop(); } catch (e) {}
-      });
-      try { ctx.close(); } catch (e) {}
-      if (state.ctx === ctx) {
-        state.ctx = null;
-        state.gain = null;
-        state.oscillators = [];
-      }
-      state.stopTimeout = null;
-      state.isFadingOut = false;
-    }, (FADE_OUT_TIME + 0.05) * 1000);
-  }
 
   //------------------------------------------------------------
   // Play the generated chord (all notes simultaneously)
@@ -285,7 +205,7 @@
   function startGeneratedChord() {
     if (!randomChord || randomChord.length === 0) return;
     const freqs = randomChord.map(obj => obj.freq);
-    startChordPlayback(generatedPlayback, freqs);
+    generatedPlayback.start(freqs);
   }
 
   //------------------------------------------------------------
@@ -294,7 +214,7 @@
   function startSelectedChord() {
     if (selectedKeys.size === 0) return;
     const freqs = [...selectedKeys].map(idx => currentNotes[idx].freq);
-    startChordPlayback(selectedPlayback, freqs);
+    selectedPlayback.start(freqs);
   }
 
   //------------------------------------------------------------
@@ -310,10 +230,10 @@
   numNotesSelect.addEventListener("change", generateChord);
   nextBtn.addEventListener("click", refreshChord);
 
-  function setupPlaybackButton(btn, startFn, state) {
+  function setupPlaybackButton(btn, startFn, player) {
     btn.addEventListener("pointerdown", startFn);
     ["pointerup", "pointerleave", "pointercancel"].forEach(evt =>
-      btn.addEventListener(evt, () => stopChordPlayback(state))
+      btn.addEventListener(evt, () => player.stop())
     );
   }
 
