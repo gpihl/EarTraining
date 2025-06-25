@@ -297,7 +297,7 @@
         arr.forEach((gain) => {
           gain.gain.cancelScheduledValues(now);
           gain.gain.setValueAtTime(gain.gain.value, now);
-          gain.gain.exponentialRampToValueAtTime(0, now + this.release);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + this.release);
         });
       });
 
