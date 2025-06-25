@@ -5,94 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Melody Practice</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="common.css">
   <style>
-    body {
-      background-color: #343a40;
-      color: #fff;
-      font-family: sans-serif;
-      margin: 0;
-      -webkit-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-      touch-action: manipulation;
-    }
-    #keyboard {
-      white-space: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 10px;
-    }
-    .key {
-      display: inline-block;
-      position: relative;
-      box-sizing: border-box;
-      user-select: none;
-      border: 1px solid #666;
-      margin: 0;
-      cursor: pointer;
-      overflow: hidden;
-    }
-    .white-key {
-      width: 60px;
-      height: 225px;
-      background: #fff;
-      vertical-align: bottom;
-      z-index: 1;
-    }
-    .black-key {
-      width: 38px;
-      height: 150px;
-      background: #000;
-      color: #fff;
-      vertical-align: top;
-      z-index: 2;
-      margin: 0 -18px;
-    }
-    .melody-marker {
-      position: absolute;
-      bottom: 8px;
-      left: 0;
-      right: 0;
-      margin: auto;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background-color: #ff8484;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #000;
-      font-weight: bold;
-      font-size: 0.9em;
-    }
-
-    @media (max-width: 576px) {
-      .white-key {
-        width: 40px;
-        height: 170px;
-      }
-      .black-key {
-        width: 25px;
-        height: 110px;
-        margin: 0 -12px;
-      }
-      h1 {
-        font-size: 1.5rem;
-      }
-      .melody-marker {
-        width: 20px;
-        height: 20px;
-        bottom: 4px;
-        font-size: 0.75em;
-      }
-      .control-buttons .btn {
-        display: block;
-        width: 100%;
-        margin-bottom: 0.5rem;
-      }
-      .control-buttons .btn:last-child {
-        margin-bottom: 0;
-      }
+    .key{cursor:pointer;}
+    .melody-marker{position:absolute;bottom:8px;left:0;right:0;margin:auto;width:30px;height:30px;border-radius:50%;background-color:#ff8484;display:flex;align-items:center;justify-content:center;color:#000;font-weight:bold;font-size:0.9em;}
+    @media (max-width:576px){
+      .melody-marker{width:20px;height:20px;bottom:4px;font-size:0.75em;}
     }
   </style>
 </head>
@@ -130,25 +48,16 @@
   <div id="keyboard" class="mb-3"></div>
 </div>
 
+<script src="common.js"></script>
 <script>
   // Build note list from E1 up to C7
-  const ALL_NOTES = [];
-  const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  for (let midi = 28; midi <= 96; midi++) {
-    const octave = Math.floor(midi / 12) - 1;
-    const name = NOTE_NAMES[midi % 12] + octave;
-    const freq = 440 * Math.pow(2, (midi - 69) / 12);
-    ALL_NOTES.push({ name, freq });
-  }
+  const ALL_NOTES = generateNotes(28, 96);
 
-  // Range-based data
-  let currentNotes = [];       // The slice of ALL_NOTES in the chosen range
-  let keyElements  = [];       // The piano key divs
-  // Melody data
-  let randomMelody = [];       // The randomly generated melody (array of {index, freq} in currentNotes)
-  let userMelody   = [];       // The user-chosen melody (array of local indices referencing currentNotes)
+  let currentNotes = [];
+  let keyElements  = [];
+  let randomMelody = [];
+  let userMelody   = [];
 
-  // DOM references
   const keyboardDiv       = document.getElementById("keyboard");
   const lowestNoteSelect  = document.getElementById("lowestNoteSelect");
   const highestNoteSelect = document.getElementById("highestNoteSelect");
@@ -157,61 +66,19 @@
   const playGeneratedBtn  = document.getElementById("playGeneratedBtn");
   const playUserBtn       = document.getElementById("playUserBtn");
 
-  //-----------------------------------------------------------
-  // 1) Populate the range dropdowns
-  //-----------------------------------------------------------
-  function populateNoteSelects() {
-    ALL_NOTES.forEach((note, index) => {
-      const optionLow  = document.createElement("option");
-      optionLow.value  = index;
-      optionLow.textContent = note.name;
-
-      const optionHigh = document.createElement("option");
-      optionHigh.value = index;
-      optionHigh.textContent = note.name;
-
-      lowestNoteSelect.appendChild(optionLow);
-      highestNoteSelect.appendChild(optionHigh);
-    });
-
-    // Default: C3 -> C5
-    const defaultLowest  = ALL_NOTES.findIndex(n => n.name === "C3");
-    const defaultHighest = ALL_NOTES.findIndex(n => n.name === "C5");
-    if (defaultLowest !== -1)  lowestNoteSelect.value  = defaultLowest;
-    if (defaultHighest !== -1) highestNoteSelect.value = defaultHighest;
-  }
-
-  populateNoteSelects();
+  populateNoteSelects(ALL_NOTES, lowestNoteSelect, highestNoteSelect, "C3", "C5");
 
   //-----------------------------------------------------------
   // 2) Build the keyboard for the chosen range
   //-----------------------------------------------------------
   function buildKeyboard() {
-    keyboardDiv.innerHTML = "";
-    keyElements = [];
-
     const lowestIndex  = parseInt(lowestNoteSelect.value, 10);
     const highestIndex = parseInt(highestNoteSelect.value, 10);
     if (isNaN(lowestIndex) || isNaN(highestIndex)) return;
-
     const start = Math.min(lowestIndex, highestIndex);
     const end   = Math.max(lowestIndex, highestIndex);
-
     currentNotes = ALL_NOTES.slice(start, end + 1);
-
-    currentNotes.forEach((note, localIdx) => {
-      const keyDiv = document.createElement("div");
-      keyDiv.classList.add("key");
-      if (note.name.includes("#")) {
-        keyDiv.classList.add("black-key");
-      } else {
-        keyDiv.classList.add("white-key");
-      }
-      // Click to add or remove the last selected note
-      keyDiv.addEventListener("click", () => onKeyClick(localIdx));
-      keyboardDiv.appendChild(keyDiv);
-      keyElements.push(keyDiv);
-    });
+    keyElements = renderKeyboard(currentNotes, keyboardDiv, onKeyClick);
   }
 
   //-----------------------------------------------------------
