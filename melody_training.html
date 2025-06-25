@@ -131,84 +131,15 @@
 </div>
 
 <script>
-  // Extended note list from C2 up to C7
-  const ALL_NOTES = [
-    { name: "E1",  freq: 82.41/2.0 },
-    { name: "F1",  freq: 87.31/2.0 },
-    { name: "F#1", freq: 92.50/2.0 },
-    { name: "G1",  freq: 98.00/2.0 },
-    { name: "G#1", freq: 103.83/2.0 },
-    { name: "A1",  freq: 110.00/2.0 },
-    { name: "A#1", freq: 116.54/2.0 },
-    { name: "B1",  freq: 123.47/2.0 },
-
-    { name: "C2",  freq: 65.41 },
-    { name: "C#2", freq: 69.30 },
-    { name: "D2",  freq: 73.42 },
-    { name: "D#2", freq: 77.78 },
-    { name: "E2",  freq: 82.41 },
-    { name: "F2",  freq: 87.31 },
-    { name: "F#2", freq: 92.50 },
-    { name: "G2",  freq: 98.00 },
-    { name: "G#2", freq: 103.83 },
-    { name: "A2",  freq: 110.00 },
-    { name: "A#2", freq: 116.54 },
-    { name: "B2",  freq: 123.47 },
-
-    { name: "C3",  freq: 130.81 },
-    { name: "C#3", freq: 138.59 },
-    { name: "D3",  freq: 146.83 },
-    { name: "D#3", freq: 155.56 },
-    { name: "E3",  freq: 164.81 },
-    { name: "F3",  freq: 174.61 },
-    { name: "F#3", freq: 185.00 },
-    { name: "G3",  freq: 196.00 },
-    { name: "G#3", freq: 207.65 },
-    { name: "A3",  freq: 220.00 },
-    { name: "A#3", freq: 233.08 },
-    { name: "B3",  freq: 246.94 },
-
-    { name: "C4",  freq: 261.63 },
-    { name: "C#4", freq: 277.18 },
-    { name: "D4",  freq: 293.66 },
-    { name: "D#4", freq: 311.13 },
-    { name: "E4",  freq: 329.63 },
-    { name: "F4",  freq: 349.23 },
-    { name: "F#4", freq: 369.99 },
-    { name: "G4",  freq: 392.00 },
-    { name: "G#4", freq: 415.30 },
-    { name: "A4",  freq: 440.00 },
-    { name: "A#4", freq: 466.16 },
-    { name: "B4",  freq: 493.88 },
-
-    { name: "C5",  freq: 523.25 },
-    { name: "C#5", freq: 554.37 },
-    { name: "D5",  freq: 587.33 },
-    { name: "D#5", freq: 622.25 },
-    { name: "E5",  freq: 659.25 },
-    { name: "F5",  freq: 698.46 },
-    { name: "F#5", freq: 739.99 },
-    { name: "G5",  freq: 783.99 },
-    { name: "G#5", freq: 830.61 },
-    { name: "A5",  freq: 880.00 },
-    { name: "A#5", freq: 932.33 },
-    { name: "B5",  freq: 987.77 },
-
-    { name: "C6",  freq: 1046.50 },
-    { name: "C#6", freq: 1108.73 },
-    { name: "D6",  freq: 1174.66 },
-    { name: "D#6", freq: 1244.51 },
-    { name: "E6",  freq: 1318.51 },
-    { name: "F6",  freq: 1396.91 },
-    { name: "F#6", freq: 1479.98 },
-    { name: "G6",  freq: 1567.98 },
-    { name: "G#6", freq: 1661.22 },
-    { name: "A6",  freq: 1760.00 },
-    { name: "A#6", freq: 1864.66 },
-    { name: "B6",  freq: 1975.53 },
-
-    { name: "C7",  freq: 2093.00 },
-  ];
+  // Build note list from E1 up to C7
+  const ALL_NOTES = [];
+  const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  for (let midi = 28; midi <= 96; midi++) {
+    const octave = Math.floor(midi / 12) - 1;
+    const name = NOTE_NAMES[midi % 12] + octave;
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    ALL_NOTES.push({ name, freq });
+  }
 
   // Range-based data
   let currentNotes = [];       // The slice of ALL_NOTES in the chosen range
@@ -411,60 +342,23 @@
     const mainGain = audioCtx.createGain();
     mainGain.connect(audioCtx.destination);
 
-
-    // Fade in quickly, then out
     mainGain.gain.setValueAtTime(0, startTime);
     mainGain.gain.linearRampToValueAtTime(1, startTime + 0.01);
     mainGain.gain.linearRampToValueAtTime(0, stopTime - 0.01);
 
-    // Gains for partials
-    const fGain = audioCtx.createGain();
-    fGain.gain.value = 0.20;
-    fGain.connect(mainGain);
+    const amps = [0.20, 0.10, 0.05, 0.03];
+    amps.forEach((amp, i) => {
+      const gain = audioCtx.createGain();
+      gain.gain.value = amp;
+      gain.connect(mainGain);
 
-    const secondGain = audioCtx.createGain();
-    secondGain.gain.value = 0.10;
-    secondGain.connect(mainGain);
-
-    const thirdGain = audioCtx.createGain();
-    thirdGain.gain.value = 0.05;
-    thirdGain.connect(mainGain);
-
-    const fourthGain = audioCtx.createGain();
-    fourthGain.gain.value = 0.03;
-    fourthGain.connect(mainGain);
-
-    // Fundamental
-    const oscFund = audioCtx.createOscillator();
-    oscFund.type = "sine";
-    oscFund.frequency.value = frequency;
-    oscFund.connect(fGain);
-    oscFund.start(startTime);
-    oscFund.stop(stopTime);
-
-    // 2nd harmonic
-    const osc2 = audioCtx.createOscillator();
-    osc2.type = "sine";
-    osc2.frequency.value = frequency * 2;
-    osc2.connect(secondGain);
-    osc2.start(startTime);
-    osc2.stop(stopTime);
-
-    // 3rd harmonic
-    const osc3 = audioCtx.createOscillator();
-    osc3.type = "sine";
-    osc3.frequency.value = frequency * 3;
-    osc3.connect(thirdGain);
-    osc3.start(startTime);
-    osc3.stop(stopTime);
-
-    // 4th harmonic
-    const osc4 = audioCtx.createOscillator();
-    osc4.type = "sine";
-    osc4.frequency.value = frequency * 4;
-    osc4.connect(fourthGain);
-    osc4.start(startTime);
-    osc4.stop(stopTime);
+      const osc = audioCtx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = frequency * (i + 1);
+      osc.connect(gain);
+      osc.start(startTime);
+      osc.stop(stopTime);
+    });
   }
 
   //-----------------------------------------------------------
