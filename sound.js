@@ -1,4 +1,22 @@
 (function () {
+  // Maintain a shared AudioContext so that iOS devices don't hit the
+  // "too many AudioContexts" limitation and to avoid repeated user gestures.
+  let sharedContext = null;
+
+  function getAudioContext() {
+    if (!sharedContext) {
+      sharedContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    // Some platforms (notably iOS) may start new contexts suspended.
+    if (sharedContext.state === "suspended") {
+      try {
+        sharedContext.resume();
+      } catch (err) {
+        // ignore resume failures
+      }
+    }
+    return sharedContext;
+  }
   function createOvertoneOsc(context, baseFreq, multiplier, amplitude, destination) {
     const gainNode = context.createGain();
     gainNode.gain.value = amplitude;
@@ -42,12 +60,7 @@
         return;
       }
 
-      const context = new (window.AudioContext || window.webkitAudioContext)();
-      // On some platforms new contexts start in a suspended state.
-      // Trigger resume to ensure playback starts promptly.
-      if (context.state === "suspended") {
-        context.resume().catch(() => {});
-      }
+      const context = getAudioContext();
       const convolver = this.reverbWet > 0
         ? createReverb(context, this.reverbSeconds, this.reverbDecay)
         : null;
@@ -70,11 +83,13 @@
       const extra = this.reverbWet > 0 ? this.reverbSeconds : 0;
       const waitTime = (endTime - context.currentTime + extra + 0.05) * 1000;
 
+      // Clean up nodes after they finish without closing the shared context
       setTimeout(() => {
-        try {
-          context.close();
-        } catch (err) {
-          // ignore
+        if (convolver) {
+          try { convolver.disconnect(); } catch (err) {}
+        }
+        if (wetGain) {
+          try { wetGain.disconnect(); } catch (err) {}
         }
       }, waitTime);
     }
@@ -142,12 +157,19 @@
       });
 
       const context = this.context;
-      try {
-        context.close();
-      } catch (err) {
-        // ignore
+      if (context) {
+        this.oscillators.forEach((osc) => {
+          try { osc.disconnect(); } catch (err) {}
+        });
+        if (this.reverbNode) {
+          try { this.reverbNode.disconnect(); } catch (err) {}
+        }
+        if (this.gain) {
+          try { this.gain.disconnect(); } catch (err) {}
+        }
       }
 
+      // keep shared AudioContext alive; just drop references
       this.context = null;
       this.gain = null;
       this.oscillators = [];
@@ -186,11 +208,7 @@
         this._immediateCleanup();
       }
 
-      this.context = new (window.AudioContext || window.webkitAudioContext)();
-      // Ensure the context is running; iOS may start it suspended.
-      if (this.context.state === "suspended") {
-        this.context.resume().catch(() => {});
-      }
+      this.context = getAudioContext();
       const now = this.context.currentTime;
 
       this.gain = this.context.createGain();
@@ -255,13 +273,13 @@
           }
         });
 
-        try {
-          context.close();
-        } catch (err) {
-          // ignore
-        }
-
         if (this.context === context) {
+          if (this.gain) {
+            try { this.gain.disconnect(); } catch (err) {}
+          }
+          if (this.reverbNode) {
+            try { this.reverbNode.disconnect(); } catch (err) {}
+          }
           this.context = null;
           this.gain = null;
           this.oscillators = [];
