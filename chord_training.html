@@ -63,6 +63,7 @@
 
   const generatedPlayback = new Sound.ChordPlayer({attack:0.3, release:0.7, reverbWet:0.25});
   const selectedPlayback  = new Sound.ChordPlayer({attack:0.3, release:0.7, reverbWet:0.25});
+  const arpeggioPlayer    = new Sound.SequencePlayer({reverbWet:0.25});
 
   const keyboardDiv       = document.getElementById("keyboard");
   const lowestNoteSelect  = document.getElementById("lowestNoteSelect");
@@ -218,6 +219,23 @@
   }
 
   //------------------------------------------------------------
+  // Determine if user's selection matches the current chord
+  //------------------------------------------------------------
+  function selectionIsCorrect() {
+    if (randomChord.length === 0) return false;
+    if (selectedKeys.size !== randomChord.length) return false;
+    return randomChord.every(obj => selectedKeys.has(obj.index));
+  }
+
+  //------------------------------------------------------------
+  // Play a quick arpeggio for a correctly identified chord
+  //------------------------------------------------------------
+  function playSuccessArpeggio() {
+    const freqs = randomChord.map(obj => obj.freq);
+    arpeggioPlayer.playSequence(freqs, 0.15, 0.05);
+  }
+
+  //------------------------------------------------------------
   // Event listeners
   //------------------------------------------------------------
   function refreshChord() {
@@ -225,10 +243,17 @@
     generateChord();
   }
 
+  function onNextChord() {
+    if (selectionIsCorrect()) {
+      playSuccessArpeggio();
+    }
+    refreshChord();
+  }
+
   lowestNoteSelect.addEventListener("change", refreshChord);
   highestNoteSelect.addEventListener("change", refreshChord);
   numNotesSelect.addEventListener("change", generateChord);
-  nextBtn.addEventListener("click", refreshChord);
+  nextBtn.addEventListener("click", onNextChord);
 
   function setupPlaybackButton(btn, startFn, player) {
     btn.addEventListener("pointerdown", startFn);
