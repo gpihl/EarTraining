@@ -236,15 +236,10 @@
       startFn();
     };
 
-    // Pointer events for most browsers
+    // Start playback on pointerdown for desktop, and click as a fallback on iOS
     btn.addEventListener("pointerdown", start);
+    btn.addEventListener("click", start);
     ["pointerup", "pointerleave", "pointercancel"].forEach(evt =>
-      btn.addEventListener(evt, () => player.stop())
-    );
-
-    // Extra touch events for iOS Safari which may not fire pointer events
-    btn.addEventListener("touchstart", start);
-    ["touchend", "touchcancel"].forEach(evt =>
       btn.addEventListener(evt, () => player.stop())
     );
   }
