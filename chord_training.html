@@ -231,8 +231,20 @@
   nextBtn.addEventListener("click", refreshChord);
 
   function setupPlaybackButton(btn, startFn, player) {
-    btn.addEventListener("pointerdown", startFn);
+    const start = (e) => {
+      e.preventDefault();
+      startFn();
+    };
+
+    // Pointer events for most browsers
+    btn.addEventListener("pointerdown", start);
     ["pointerup", "pointerleave", "pointercancel"].forEach(evt =>
+      btn.addEventListener(evt, () => player.stop())
+    );
+
+    // Extra touch events for iOS Safari which may not fire pointer events
+    btn.addEventListener("touchstart", start);
+    ["touchend", "touchcancel"].forEach(evt =>
       btn.addEventListener(evt, () => player.stop())
     );
   }
