@@ -37,6 +37,15 @@ function renderKeyboard(notes, container, onClick) {
     if (n.name.includes("#")) div.classList.add("black-key");
     else div.classList.add("white-key");
     if (onClick) div.addEventListener("click", () => onClick(i));
+
+    const addHover = () => div.classList.add("hover");
+    const removeHover = () => div.classList.remove("hover");
+    div.addEventListener("pointerenter", addHover);
+    div.addEventListener("pointerleave", removeHover);
+    div.addEventListener("pointerdown", addHover);
+    ["pointerup", "pointercancel"].forEach(evt =>
+      div.addEventListener(evt, removeHover)
+    );
     container.appendChild(div);
     keys.push(div);
   });
