@@ -43,6 +43,11 @@
       }
 
       const context = new (window.AudioContext || window.webkitAudioContext)();
+      // On some platforms new contexts start in a suspended state.
+      // Trigger resume to ensure playback starts promptly.
+      if (context.state === "suspended") {
+        context.resume().catch(() => {});
+      }
       const convolver = this.reverbWet > 0
         ? createReverb(context, this.reverbSeconds, this.reverbDecay)
         : null;
@@ -182,6 +187,10 @@
       }
 
       this.context = new (window.AudioContext || window.webkitAudioContext)();
+      // Ensure the context is running; iOS may start it suspended.
+      if (this.context.state === "suspended") {
+        this.context.resume().catch(() => {});
+      }
       const now = this.context.currentTime;
 
       this.gain = this.context.createGain();
