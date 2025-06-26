@@ -231,14 +231,7 @@
   nextBtn.addEventListener("click", refreshChord);
 
   function setupPlaybackButton(btn, startFn, player) {
-    const start = (e) => {
-      e.preventDefault();
-      startFn();
-    };
-
-    // Start playback on pointerdown for desktop, and click as a fallback on iOS
-    btn.addEventListener("pointerdown", start);
-    btn.addEventListener("click", start);
+    btn.addEventListener("pointerdown", startFn);
     ["pointerup", "pointerleave", "pointercancel"].forEach(evt =>
       btn.addEventListener(evt, () => player.stop())
     );
@@ -247,9 +240,11 @@
   setupPlaybackButton(playGeneratedBtn, startGeneratedChord, generatedPlayback);
   setupPlaybackButton(playSelectedBtn, startSelectedChord, selectedPlayback);
 
-  // Initialize
-  buildKeyboard();
-  generateChord();
+  // Initialize after full page load
+  window.addEventListener('load', () => {
+    buildKeyboard();
+    generateChord();
+  });
 </script>
 
 </body>
