@@ -21,6 +21,7 @@ body {
   position: relative;
   box-sizing: border-box;
   user-select: none;
+  transition: background-color 0.1s ease;
   border: 1px solid #000000;
   margin: 0;
   overflow: hidden;
@@ -34,6 +35,10 @@ body {
   z-index: 1;
   border-bottom-left-radius: 4px;
   border-bottom-right-radius: 4px;
+}
+
+.white-key:hover {
+  background: #e6e6e6;
 }
 
 .black-key {
