@@ -257,7 +257,14 @@ let controlsShown = false;
 let hasInterval = false;
 
 // SequencePlayer for quick chromatic runs
-const chromaticPlayer = new Sound.SequencePlayer({attack:0.01, release:0.05});
+const chromaticPlayer = new Sound.SequencePlayer(
+  {
+    attack:0.03,
+    release:0.05,
+    overtoneAmps: [0.20, 0.10, 0.05, 0.03],
+    reverbWet: 0.25
+  }
+);
 
 /***************************************************************
  * AUDIO SETUP ON DEMAND

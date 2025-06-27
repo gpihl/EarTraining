@@ -105,7 +105,7 @@
 
       mainGain.gain.setValueAtTime(0, start);
       mainGain.gain.linearRampToValueAtTime(1, start + this.attack);
-      mainGain.gain.linearRampToValueAtTime(0, stop - this.release);
+      mainGain.gain.linearRampToValueAtTime(0.0001, stop + this.release);
 
       const oscillators = this.overtoneAmps.map((amp, index) => {
         return createOvertoneOsc(context, frequency, index + 1, amp, mainGain);
@@ -113,7 +113,7 @@
 
       oscillators.forEach((oscillator) => {
         oscillator.start(start);
-        oscillator.stop(stop);
+        oscillator.stop(stop + this.release);
       });
     }
   }
