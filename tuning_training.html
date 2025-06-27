@@ -316,7 +316,7 @@ toggleCheckBtn.addEventListener("click", () => {
 });
 
 // Generate a new random interval
-newIntervalBtn.addEventListener("click", () => {
+newIntervalBtn.addEventListener("click", async () => {
   if (!controlsShown) {
     controlsShown = true;
     toggleCheckBtn.style.display = "";
@@ -324,6 +324,7 @@ newIntervalBtn.addEventListener("click", () => {
     toggleUserBtn.style.display = "";
     sliderContainer.style.display = "";
   }
+  await initAudioIfNeeded();
   pickNewInterval();
 });
 
