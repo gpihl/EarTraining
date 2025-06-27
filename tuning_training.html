@@ -15,7 +15,9 @@
       -webkit-user-select: none;
       -ms-user-select: none;
       user-select: none;
-      touch-action: manipulation;
+      overflow-y: hidden;
+      height: 100vh;
+      touch-action: none;
     }
     #intervalDisplay {
       font-size: 1.2em;
@@ -349,15 +351,18 @@ pitchSlider.addEventListener("pointerdown", async (e) => {
     setUserOn(true);
   }
   moveSliderFromEvent(e);
+  e.preventDefault();
+  pitchSlider.setPointerCapture(e.pointerId);
   const moveHandler = (ev) => {
     moveSliderFromEvent(ev);
   };
   const upHandler = (ev) => {
-    document.removeEventListener("pointermove", moveHandler);
-    document.removeEventListener("pointerup", upHandler);
+    pitchSlider.releasePointerCapture(ev.pointerId);
+    pitchSlider.removeEventListener("pointermove", moveHandler);
+    pitchSlider.removeEventListener("pointerup", upHandler);
   };
-  document.addEventListener("pointermove", moveHandler);
-  document.addEventListener("pointerup", upHandler);
+  pitchSlider.addEventListener("pointermove", moveHandler);
+  pitchSlider.addEventListener("pointerup", upHandler);
 });
 
 /*
