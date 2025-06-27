@@ -231,6 +231,9 @@ let userOn = false;
 /* Performance tracking: store each guess in an array of { interval, difference } */
 let results = [];
 
+// Last cent difference shown when Check is used
+let lastCheckDiff = null;
+
 // HTML elements
 const toggleRootBtn       = document.getElementById("toggleRootBtn");
 const toggleUserBtn       = document.getElementById("toggleUserBtn");
@@ -363,9 +366,6 @@ pitchSlider.addEventListener("input", () => {
     const freq = sliderValueToFrequency(val);
     userOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
   }
-  if (checkVisible) {
-    updateCentsDifference();
-  }
 });
 
 /***************************************************************
@@ -379,11 +379,12 @@ function setCheckOn(on) {
   centsDifference.style.display = on ? "block" : "none";
 
   if (on) {
-    const diff = getCurrentDifference();
-    recordCurrentGuess(diff);
+    lastCheckDiff = getCurrentDifference();
+    recordCurrentGuess(lastCheckDiff);
     setUserPitchToTarget(false);
-    updateCentsDifference(diff);
+    updateCentsDifference(lastCheckDiff);
   } else {
+    lastCheckDiff = null;
     updateMarkerPosition();
   }
 }
@@ -507,19 +508,18 @@ function updateCentsDifference(diffOverride = null) {
  * Move user oscillator to target frequency (12-TET)
  ***************************************************************/
 function setUserPitchToTarget(showDiff = true) {
-  if (!userOsc) return;
-  // Convert the 12-TET targetFreq to a slider value
   const correctSliderVal = frequencyToSliderValue(targetFreq);
-  pitchSlider.value = correctSliderVal;
+  const clampedVal = Math.min(Math.max(correctSliderVal, 0), 1);
+  pitchSlider.value = clampedVal;
 
-  // Move the oscillator's frequency to targetFreq
-  userOsc.frequency.setValueAtTime(targetFreq, audioCtx.currentTime);
+  if (audioCtx && userOsc) {
+    userOsc.frequency.setValueAtTime(targetFreq, audioCtx.currentTime);
+  }
 
-  // Update marker & cent difference if visible
   if (checkVisible) {
     updateMarkerPosition();
     if (showDiff) {
-      updateCentsDifference();
+      updateCentsDifference(lastCheckDiff);
     }
   }
 }
