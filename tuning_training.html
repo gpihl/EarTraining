@@ -333,17 +333,31 @@ moveToJustBtn.addEventListener("click", async () => {
   Listen for pointerdown (or mousedown) to detect user "grabbing" the slider.
   As soon as the user interacts with the slider, turn the user tone ON (if it’s off).
 */
-pitchSlider.addEventListener("pointerdown", async () => {
+// Allow grabbing the slider from anywhere on the track (helpful on mobile).
+function moveSliderFromEvent(ev) {
+  const rect = pitchSlider.getBoundingClientRect();
+  const rawVal = (ev.clientX - rect.left) / rect.width;
+  const clamped = Math.min(Math.max(rawVal, 0), 1);
+  pitchSlider.value = clamped;
+  // Trigger the normal input handler to update audio
+  pitchSlider.dispatchEvent(new Event("input"));
+}
+
+pitchSlider.addEventListener("pointerdown", async (e) => {
   if (!userOn) {
     await initAudioIfNeeded();
     setUserOn(true);
   }
-});
-pitchSlider.addEventListener("mousedown", async () => {
-  if (!userOn) {
-    await initAudioIfNeeded();
-    setUserOn(true);
-  }
+  moveSliderFromEvent(e);
+  const moveHandler = (ev) => {
+    moveSliderFromEvent(ev);
+  };
+  const upHandler = (ev) => {
+    document.removeEventListener("pointermove", moveHandler);
+    document.removeEventListener("pointerup", upHandler);
+  };
+  document.addEventListener("pointermove", moveHandler);
+  document.addEventListener("pointerup", upHandler);
 });
 
 /*
