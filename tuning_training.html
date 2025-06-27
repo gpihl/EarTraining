@@ -308,6 +308,7 @@ toggleUserBtn.addEventListener("click", async () => {
 
 // Toggle check (marker line and cent difference)
 toggleCheckBtn.addEventListener("click", () => {
+  if (toggleCheckBtn.disabled) return;
   setCheckOn(!checkVisible);
 });
 
@@ -379,6 +380,7 @@ function setCheckOn(on) {
   centsDifference.style.display = on ? "block" : "none";
 
   if (on) {
+    toggleCheckBtn.disabled = true;
     lastCheckDiff = getCurrentDifference();
     recordCurrentGuess(lastCheckDiff);
     setUserPitchToTarget(false);
@@ -561,6 +563,7 @@ function pickNewInterval() {
 
   // Turn "Check" (marker) off automatically
   setCheckOn(false);
+  toggleCheckBtn.disabled = false;
 
   // 1. Choose random interval from list
   const intervalObj = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
