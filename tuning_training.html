@@ -154,6 +154,8 @@ const SLIDER_RANGE_SEMITONES = 5;
 
 // Time in seconds for fading root/user oscillators in and out
 const FADE_TIME = 0.1;
+// Time in seconds to ramp oscillator frequencies when interval changes
+const FREQ_RAMP_TIME = 0.5;
 
 /*
   List of available root frequencies (notes) between
@@ -587,7 +589,23 @@ function setUserPitchToJust() {
 function pickNewInterval() {
   // Turn user off automatically
   setUserOn(false);
-  setRootOn(true);
+
+  const now = audioCtx ? audioCtx.currentTime : 0;
+  const fadeRoot = !userOn && rootGain && audioCtx;
+
+  // If high tone is disabled, fade the root out before changing pitch
+  if (fadeRoot) {
+    rootGain.gain.cancelScheduledValues(now);
+    rootGain.gain.setValueAtTime(Math.max(rootGain.gain.value, 0.0001), now);
+    rootGain.gain.exponentialRampToValueAtTime(0.0001, now + FADE_TIME);
+    rootGain.gain.setValueAtTime(0, now + FADE_TIME);
+    // Update UI state to show root is on
+    rootOn = true;
+    toggleRootBtn.classList.add("active");
+  } else {
+    // Normal behavior when high tone is enabled
+    setRootOn(true);
+  }
 
   // Turn "Check" (marker) off automatically
   setCheckOn(false);
@@ -609,9 +627,13 @@ function pickNewInterval() {
   sliderMinFreq = targetFreq * Math.pow(2, -randomOffset / 12);
   sliderMaxFreq = sliderMinFreq * Math.pow(2, SLIDER_RANGE_SEMITONES / 12);
 
-  // 5. If root is on, set rootOsc frequency (only if audio is initted)
+  const freqStart = audioCtx ? (fadeRoot ? now + FADE_TIME : now) : 0;
+
+  // 5. If root is on, ramp rootOsc frequency
   if (audioCtx && rootOsc) {
-    rootOsc.frequency.setValueAtTime(rootFreq, audioCtx.currentTime);
+    rootOsc.frequency.cancelScheduledValues(freqStart);
+    rootOsc.frequency.setValueAtTime(Math.max(rootOsc.frequency.value, 0.0001), freqStart);
+    rootOsc.frequency.exponentialRampToValueAtTime(rootFreq, freqStart + FREQ_RAMP_TIME);
   }
 
   // 6. Randomize the user oscillator starting position somewhere in [0..1]
@@ -619,7 +641,15 @@ function pickNewInterval() {
   pitchSlider.value = randomSliderVal;
   if (audioCtx && userOsc) {
     const userStartFreq = sliderValueToFrequency(randomSliderVal);
-    userOsc.frequency.setValueAtTime(userStartFreq, audioCtx.currentTime);
+    userOsc.frequency.cancelScheduledValues(freqStart);
+    userOsc.frequency.setValueAtTime(Math.max(userOsc.frequency.value, 0.0001), freqStart);
+    userOsc.frequency.exponentialRampToValueAtTime(userStartFreq, freqStart + FREQ_RAMP_TIME);
+  }
+
+  if (fadeRoot) {
+    const fadeInStart = freqStart + FREQ_RAMP_TIME;
+    rootGain.gain.setValueAtTime(0.0001, fadeInStart);
+    rootGain.gain.exponentialRampToValueAtTime(0.2, fadeInStart + FADE_TIME);
   }
 
   // 7. Update UI text
