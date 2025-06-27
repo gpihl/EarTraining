@@ -152,6 +152,9 @@ const INTERVALS = [
 // Total slider span in semitones
 const SLIDER_RANGE_SEMITONES = 5;
 
+// Time in seconds for fading root/user oscillators in and out
+const FADE_TIME = 0.1;
+
 /*
   List of available root frequencies (notes) between
   A2 (110 Hz) and A3 (220 Hz) in 12-tone equal temperament.
@@ -407,16 +410,30 @@ function setCheckOn(on) {
  ***************************************************************/
 function setRootOn(on) {
   rootOn = on;
-  if (rootGain) {
-    rootGain.gain.value = on ? 0.2 : 0;
+  if (rootGain && audioCtx) {
+    const now = audioCtx.currentTime;
+    rootGain.gain.cancelScheduledValues(now);
+    rootGain.gain.setValueAtTime(Math.max(rootGain.gain.value, 0.0001), now);
+    const target = on ? 0.2 : 0.0001;
+    rootGain.gain.exponentialRampToValueAtTime(target, now + FADE_TIME);
+    if (!on) {
+      rootGain.gain.setValueAtTime(0, now + FADE_TIME);
+    }
   }
   toggleRootBtn.classList.toggle("active", on);
 }
 
 function setUserOn(on) {
   userOn = on;
-  if (userGain) {
-    userGain.gain.value = on ? 0.2 : 0;
+  if (userGain && audioCtx) {
+    const now = audioCtx.currentTime;
+    userGain.gain.cancelScheduledValues(now);
+    userGain.gain.setValueAtTime(Math.max(userGain.gain.value, 0.0001), now);
+    const target = on ? 0.2 : 0.0001;
+    userGain.gain.exponentialRampToValueAtTime(target, now + FADE_TIME);
+    if (!on) {
+      userGain.gain.setValueAtTime(0, now + FADE_TIME);
+    }
   }
   toggleUserBtn.classList.toggle("active", on);
 }
