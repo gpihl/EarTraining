@@ -19,9 +19,8 @@
   </style>
 </head>
 <body class="bg-dark text-light">
-<div class="container py-4 page-container">
+<div class="container py-4">
   <h1 class="text-center mb-4">Chord Practice</h1>
-  <div class="page-content">
 
 
   <div class="mb-4 control-buttons">
@@ -32,6 +31,11 @@
 
   <div id="keyboard" class="mb-3"></div>
 
+  <div class="text-center mb-2">
+    <button id="optionsToggleBtn" class="btn btn-secondary options-toggle">
+      <i class="fa-solid fa-angle-down"></i>
+    </button>
+  </div>
   <div id="optionsPanel" class="row g-3 align-items-end mb-4 d-none">
     <div class="col-md-4">
       <label for="lowestNoteSelect" class="form-label">Lowest Note</label>
@@ -51,11 +55,6 @@
         <option value="6">6</option>
       </select>
     </div>
-  </div>
-  <div class="text-center mt-2 mb-0">
-    <button id="optionsToggleBtn" class="btn btn-secondary options-toggle">
-      <i class="fa-solid fa-angle-down"></i>
-    </button>
   </div>
 </div>
 

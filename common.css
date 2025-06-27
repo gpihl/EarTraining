@@ -108,15 +108,16 @@ body {
   .app-menu .menu-links { font-size: 1.2rem; }
 }
 
-/* Position main content near the bottom on small screens */
+/* Keep the options toggle visible on mobile */
 @media (max-width: 576px) {
-  .page-container {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    padding-bottom: 0;
+  #optionsToggleBtn {
+    position: fixed;
+    bottom: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
   }
-  .page-content {
-    margin-top: auto;
+  #optionsPanel {
+    margin-bottom: 3rem;
   }
 }
