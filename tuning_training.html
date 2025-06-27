@@ -104,12 +104,12 @@
   <h1 class="text-center mb-4">Intonation Practice</h1>
   <div id="intervalDisplay" class="mb-3"></div>
   <div class="mb-3">
-    <button id="toggleRootBtn" class="btn btn-primary me-2 mb-2">Tone 1</button>
-    <button id="toggleUserBtn" class="btn btn-primary me-2 mb-2">Tone 2</button>
-    <button id="toggleCheckBtn" class="btn btn-secondary me-2 mb-2">Check</button>
-    <button id="newIntervalBtn" class="btn btn-success me-2 mb-2">New</button>
+    <button id="newIntervalBtn" class="btn btn-success me-2 mb-2">New Interval</button>
+    <button id="toggleCheckBtn" class="btn btn-secondary me-2 mb-2" style="display:none;">Check</button>
+    <button id="toggleRootBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Low Tone</button>
+    <button id="toggleUserBtn" class="btn btn-primary me-2 mb-2" style="display:none;">High Tone</button>
   </div>
-  <div id="sliderContainer" class="mb-3">
+  <div id="sliderContainer" class="mb-3" style="display:none;">
     <div id="sliderHitbox"></div>
     <input type="range" id="pitchSlider" min="0" max="1" step="any" class="form-range">
     <div id="correctLine"></div>
@@ -247,6 +247,9 @@ const centsDifference     = document.getElementById("centsDifference");
 const intervalDisplay     = document.getElementById("intervalDisplay");
 const resultsList         = document.getElementById("resultsList");
 
+// Flag to reveal controls on first interval
+let controlsShown = false;
+
 /***************************************************************
  * AUDIO SETUP ON DEMAND
  ***************************************************************/
@@ -314,6 +317,13 @@ toggleCheckBtn.addEventListener("click", () => {
 
 // Generate a new random interval
 newIntervalBtn.addEventListener("click", () => {
+  if (!controlsShown) {
+    controlsShown = true;
+    toggleCheckBtn.style.display = "";
+    toggleRootBtn.style.display = "";
+    toggleUserBtn.style.display = "";
+    sliderContainer.style.display = "";
+  }
   pickNewInterval();
 });
 
@@ -376,7 +386,7 @@ function setCheckOn(on) {
   checkVisible = on;
   toggleCheckBtn.classList.toggle("active", on);
 
-  correctLine.style.display    = on ? "block" : "none";
+  // Always keep the marker line hidden
   centsDifference.style.display = on ? "block" : "none";
 
   if (on) {
