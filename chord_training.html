@@ -11,6 +11,8 @@
     .key{cursor:pointer;}
     .lowest-note-marker{position:absolute;bottom:8px;left:0;right:0;margin:auto;width:30px;height:30px;border-radius:50%;background-color:#ff8484;border: 1px solid black;}
     .selected-note-marker{position:absolute;bottom:8px;left:0;right:0;margin:auto;width:30px;height:30px;border-radius:50%;background-color:#ffd700;border: 1px solid black;}
+    .options-toggle{background-color:#555;border-color:#555;}
+    .options-toggle:hover{background-color:#666;border-color:#666;}
     @media (max-width:576px){
       .lowest-note-marker,.selected-note-marker{width:20px;height:20px;bottom:4px;}
     }
@@ -30,7 +32,7 @@
   <div id="keyboard" class="mb-3"></div>
 
   <div class="text-center mb-2">
-    <button id="optionsToggleBtn" class="btn btn-secondary">
+    <button id="optionsToggleBtn" class="btn btn-secondary options-toggle">
       <i class="fa-solid fa-angle-down"></i>
     </button>
   </div>

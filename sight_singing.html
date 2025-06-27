@@ -5,9 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Sight-Singing Practice</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="common.css">
   <style>
     .sequence-label{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-weight:bold;font-size:1.2em;color:#ff8484;}
+    .options-toggle{background-color:#555;border-color:#555;}
+    .options-toggle:hover{background-color:#666;border-color:#666;}
     @media (max-width:576px){
       .sequence-label{bottom:4px;font-size:1em;}
     }
@@ -17,7 +20,21 @@
 <div class="container py-4">
   <h1 class="text-center mb-4">Sight-Singing Practice</h1>
 
-  <div class="row g-3 align-items-end mb-4">
+
+  <div class="mb-4 control-buttons">
+    <button id="nextBtn" class="btn btn-primary me-2">New Melody</button>
+    <button id="playBtn" class="btn btn-success me-2">Play Melody</button>
+    <button id="playFirstBtn" class="btn btn-success">Play First Note</button>
+  </div>
+
+  <div id="keyboard" class="mb-3"></div>
+
+  <div class="text-center mb-2">
+    <button id="optionsToggleBtn" class="btn btn-secondary options-toggle">
+      <i class="fa-solid fa-angle-down"></i>
+    </button>
+  </div>
+  <div id="optionsPanel" class="row g-3 align-items-end mb-4 d-none">
     <div class="col-md-4">
       <label for="lowestNoteSelect" class="form-label">Lowest Note</label>
       <select id="lowestNoteSelect" class="form-select form-select-sm"></select>
@@ -31,14 +48,6 @@
       <input type="number" id="numNotesInput" value="3" min="1" max="50" class="form-control form-control-sm">
     </div>
   </div>
-
-  <div class="mb-4 control-buttons">
-    <button id="nextBtn" class="btn btn-primary me-2">New Melody</button>
-    <button id="playBtn" class="btn btn-success me-2">Play Melody</button>
-    <button id="playFirstBtn" class="btn btn-success">Play First Note</button>
-  </div>
-
-  <div id="keyboard" class="mb-3"></div>
 </div>
 
 <script src="common.js"></script>
@@ -58,6 +67,8 @@
   const nextBtn           = document.getElementById("nextBtn");
   const playBtn           = document.getElementById("playBtn");
   const playFirstBtn      = document.getElementById("playFirstBtn");
+  const optionsPanel      = document.getElementById("optionsPanel");
+  const optionsToggleBtn  = document.getElementById("optionsToggleBtn");
 
   populateNoteSelects(ALL_NOTES, lowestNoteSelect, highestNoteSelect, "C3", "C5");
 
@@ -155,6 +166,17 @@
   nextBtn.addEventListener("click", generateSequence);
   playBtn.addEventListener("click", playSequence);
   playFirstBtn.addEventListener("click", playFirstNote);
+  optionsToggleBtn.addEventListener("click", () => {
+    optionsPanel.classList.toggle("d-none");
+    const icon = optionsToggleBtn.querySelector("i");
+    if (optionsPanel.classList.contains("d-none")) {
+      icon.classList.remove("fa-angle-up");
+      icon.classList.add("fa-angle-down");
+    } else {
+      icon.classList.remove("fa-angle-down");
+      icon.classList.add("fa-angle-up");
+    }
+  });
 
   // Initial
   buildKeyboard();
