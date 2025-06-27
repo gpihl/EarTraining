@@ -107,3 +107,13 @@ body {
   .app-menu button { font-size: 2rem; }
   .app-menu .menu-links { font-size: 1.2rem; }
 }
+@media (max-width: 576px) {
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  .mobile-bottom {
+    margin-top: auto;
+  }
+}
