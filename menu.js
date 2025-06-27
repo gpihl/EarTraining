@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['index.html', 'Home'],
     ['chord_training.html', 'Chords'],
     ['melody_training.html', 'Melody'],
-    ['sight_singing.html', 'Sight-Singing'],
+    ['sight_singing.html', 'SightSinging'],
     ['tuning_training.html', 'Intonation']
   ];
 
