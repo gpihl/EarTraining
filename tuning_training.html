@@ -117,6 +117,7 @@
     <div id="resultsList"></div>
   </div>
 </div>
+<script src="sound.js"></script>
 <script>
 /*
  * Configuration
@@ -253,6 +254,9 @@ const resultsList         = document.getElementById("resultsList");
 // Flag to reveal controls on first interval
 let controlsShown = false;
 
+// SequencePlayer for quick chromatic runs
+const chromaticPlayer = new Sound.SequencePlayer({attack:0.01, release:0.05});
+
 /***************************************************************
  * AUDIO SETUP ON DEMAND
  ***************************************************************/
@@ -329,6 +333,7 @@ newIntervalBtn.addEventListener("click", async () => {
   }
   await initAudioIfNeeded();
   pickNewInterval();
+  playChromaticRun();
 });
 
 /***************************************************************
@@ -658,6 +663,15 @@ function pickNewInterval() {
     updateMarkerPosition();
     updateCentsDifference();
   }
+}
+
+// Play a quick chromatic run from the low tone to the high tone
+function playChromaticRun() {
+  const freqs = [];
+  for (let i = 0; i <= currentSemitones; i++) {
+    freqs.push(rootFreq * Math.pow(2, i / 12));
+  }
+  chromaticPlayer.playSequence(freqs, 0.1, 0.02);
 }
 </script>
 <script src="menu.js"></script>
