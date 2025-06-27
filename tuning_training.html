@@ -30,6 +30,18 @@
       position: relative;
       width: 100%;
       margin: 30px auto;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      touch-action: none;
+    }
+    #sliderHitbox {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      cursor: pointer;
     }
     #pitchSlider {
       -webkit-appearance: none;
@@ -39,6 +51,7 @@
       border-radius: 3px;
       outline: none;
       cursor: pointer;
+      pointer-events: none;
     }
     #pitchSlider::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -115,6 +128,7 @@
     <button id="moveToJustBtn" class="btn btn-warning mb-2">Correct Just</button>
   </div>
   <div id="sliderContainer" class="mb-3">
+    <div id="sliderHitbox"></div>
     <input type="range" id="pitchSlider" min="0" max="1" step="any" class="form-range">
     <div id="correctLine"></div>
   </div>
@@ -244,6 +258,8 @@ const newIntervalBtn      = document.getElementById("newIntervalBtn");
 const moveToCorrectBtn    = document.getElementById("moveToCorrectBtn");
 const moveToJustBtn       = document.getElementById("moveToJustBtn");
 const pitchSlider         = document.getElementById("pitchSlider");
+const sliderContainer     = document.getElementById("sliderContainer");
+const sliderHitbox        = document.getElementById("sliderHitbox");
 const correctLine         = document.getElementById("correctLine");
 const centsDifference     = document.getElementById("centsDifference");
 const intervalDisplay     = document.getElementById("intervalDisplay");
@@ -348,25 +364,28 @@ function moveSliderFromEvent(ev) {
   pitchSlider.dispatchEvent(new Event("input"));
 }
 
-pitchSlider.addEventListener("pointerdown", async (e) => {
+async function startSliderDrag(e) {
   if (!userOn) {
     await initAudioIfNeeded();
     setUserOn(true);
   }
   moveSliderFromEvent(e);
   e.preventDefault();
-  pitchSlider.setPointerCapture(e.pointerId);
+  const target = e.currentTarget;
+  target.setPointerCapture(e.pointerId);
   const moveHandler = (ev) => {
     moveSliderFromEvent(ev);
   };
   const upHandler = (ev) => {
-    pitchSlider.releasePointerCapture(ev.pointerId);
-    pitchSlider.removeEventListener("pointermove", moveHandler);
-    pitchSlider.removeEventListener("pointerup", upHandler);
+    target.releasePointerCapture(ev.pointerId);
+    target.removeEventListener("pointermove", moveHandler);
+    target.removeEventListener("pointerup", upHandler);
   };
-  pitchSlider.addEventListener("pointermove", moveHandler);
-  pitchSlider.addEventListener("pointerup", upHandler);
-});
+  target.addEventListener("pointermove", moveHandler);
+  target.addEventListener("pointerup", upHandler);
+}
+
+sliderHitbox.addEventListener("pointerdown", startSliderDrag);
 
 /*
   On input, update frequency. (This triggers continuously while dragging.)
