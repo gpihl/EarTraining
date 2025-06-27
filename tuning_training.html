@@ -94,22 +94,6 @@
       width: 100%;
       text-align: left;
     }
-    #resultsContainer h3 {
-      margin-bottom: 10px;
-    }
-    #resultsTable {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    #resultsTable td {
-      padding: 2px 5px;
-    }
-    #resultsTable td:nth-child(1) {
-      text-align: left;
-    }
-    #resultsTable td:nth-child(2) {
-      text-align: right;
-    }
     @media (max-width: 576px) {
       h1 { font-size: 1.5rem; }
     }
@@ -124,8 +108,6 @@
     <button id="toggleUserBtn" class="btn btn-primary me-2 mb-2">Tone 2</button>
     <button id="toggleCheckBtn" class="btn btn-secondary me-2 mb-2">Check</button>
     <button id="newIntervalBtn" class="btn btn-success me-2 mb-2">New</button>
-    <button id="moveToCorrectBtn" class="btn btn-warning me-2 mb-2">Correct</button>
-    <button id="moveToJustBtn" class="btn btn-warning mb-2">Correct Just</button>
   </div>
   <div id="sliderContainer" class="mb-3">
     <div id="sliderHitbox"></div>
@@ -134,7 +116,6 @@
   </div>
   <div id="centsDifference" class="mb-3"></div>
   <div id="resultsContainer">
-    <h3>Results</h3>
     <div id="resultsList"></div>
   </div>
 </div>
@@ -250,13 +231,14 @@ let userOn = false;
 /* Performance tracking: store each guess in an array of { interval, difference } */
 let results = [];
 
+// Last cent difference shown when Check is used
+let lastCheckDiff = null;
+
 // HTML elements
 const toggleRootBtn       = document.getElementById("toggleRootBtn");
 const toggleUserBtn       = document.getElementById("toggleUserBtn");
 const toggleCheckBtn      = document.getElementById("toggleCheckBtn");
 const newIntervalBtn      = document.getElementById("newIntervalBtn");
-const moveToCorrectBtn    = document.getElementById("moveToCorrectBtn");
-const moveToJustBtn       = document.getElementById("moveToJustBtn");
 const pitchSlider         = document.getElementById("pitchSlider");
 const sliderContainer     = document.getElementById("sliderContainer");
 const sliderHitbox        = document.getElementById("sliderHitbox");
@@ -326,24 +308,13 @@ toggleUserBtn.addEventListener("click", async () => {
 
 // Toggle check (marker line and cent difference)
 toggleCheckBtn.addEventListener("click", () => {
+  if (toggleCheckBtn.disabled) return;
   setCheckOn(!checkVisible);
 });
 
 // Generate a new random interval
 newIntervalBtn.addEventListener("click", () => {
   pickNewInterval();
-});
-
-// Move user pitch to the exact correct pitch (12-TET)
-moveToCorrectBtn.addEventListener("click", async () => {
-  await initAudioIfNeeded();
-  setUserPitchToTarget();
-});
-
-// Move user pitch to just-intonation pitch
-moveToJustBtn.addEventListener("click", async () => {
-  await initAudioIfNeeded();
-  setUserPitchToJust();
 });
 
 /***************************************************************
@@ -396,9 +367,6 @@ pitchSlider.addEventListener("input", () => {
     const freq = sliderValueToFrequency(val);
     userOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
   }
-  if (checkVisible) {
-    updateCentsDifference();
-  }
 });
 
 /***************************************************************
@@ -411,12 +379,15 @@ function setCheckOn(on) {
   correctLine.style.display    = on ? "block" : "none";
   centsDifference.style.display = on ? "block" : "none";
 
-  updateMarkerPosition();
-  updateCentsDifference();
-
-  // If turning ON, record the current guess
   if (on) {
-    recordCurrentGuess();
+    toggleCheckBtn.disabled = true;
+    lastCheckDiff = getCurrentDifference();
+    recordCurrentGuess(lastCheckDiff);
+    setUserPitchToTarget(false);
+    updateCentsDifference(lastCheckDiff);
+  } else {
+    lastCheckDiff = null;
+    updateMarkerPosition();
   }
 }
 
@@ -448,8 +419,10 @@ function setUserOn(on) {
  * along with the interval name. Then update the display.
  * The NEWEST attempt goes at the TOP of the list.
  */
-function recordCurrentGuess() {
-  const diff = getCurrentDifference();
+function recordCurrentGuess(diff = null) {
+  if (diff === null) {
+    diff = getCurrentDifference();
+  }
   // Add new item at front
   results.unshift({
     interval: intervalName,
@@ -475,20 +448,7 @@ function updateResultsList() {
   }
   const avg = sum / results.length;
 
-  // 2. Build a table
-  let html = `<div>Average distance: ${avg.toFixed(1)} cents</div><br>`;
-  html += `<table id="resultsTable">`;
-  for (let r of results) {
-    let signString = r.difference > 0 ? "+" : "";
-    html += `
-      <tr>
-        <td>${r.interval}</td>
-        <td>${signString}${r.difference} cents</td>
-      </tr>
-    `;
-  }
-  html += `</table>`;
-
+  let html = `<div>Average distance: ${avg.toFixed(1)} cents</div>`;
   resultsList.innerHTML = html;
 }
 
@@ -533,27 +493,36 @@ function updateMarkerPosition() {
 }
 
 // Show how many cents away the user is from the correct pitch
-function updateCentsDifference() {
-  const centDiff = getCurrentDifference();
-  centsDifference.textContent = `You are ${centDiff} cents from the target.`;
+function updateCentsDifference(diffOverride = null) {
+  const centDiff = diffOverride !== null ? diffOverride : getCurrentDifference();
+  let text = "";
+  if (centDiff > 0) {
+    text = `You were ${Math.abs(centDiff).toFixed(1)} cents sharp.`;
+  } else if (centDiff < 0) {
+    text = `You were ${Math.abs(centDiff).toFixed(1)} cents flat.`;
+  } else {
+    text = "You were 0 cents from the target.";
+  }
+  centsDifference.textContent = text;
 }
 
 /***************************************************************
  * Move user oscillator to target frequency (12-TET)
  ***************************************************************/
-function setUserPitchToTarget() {
-  if (!userOsc) return;
-  // Convert the 12-TET targetFreq to a slider value
+function setUserPitchToTarget(showDiff = true) {
   const correctSliderVal = frequencyToSliderValue(targetFreq);
-  pitchSlider.value = correctSliderVal;
+  const clampedVal = Math.min(Math.max(correctSliderVal, 0), 1);
+  pitchSlider.value = clampedVal;
 
-  // Move the oscillator's frequency to targetFreq
-  userOsc.frequency.setValueAtTime(targetFreq, audioCtx.currentTime);
+  if (audioCtx && userOsc) {
+    userOsc.frequency.setValueAtTime(targetFreq, audioCtx.currentTime);
+  }
 
-  // Update marker & cent difference if visible
   if (checkVisible) {
     updateMarkerPosition();
-    updateCentsDifference();
+    if (showDiff) {
+      updateCentsDifference(lastCheckDiff);
+    }
   }
 }
 
@@ -594,6 +563,7 @@ function pickNewInterval() {
 
   // Turn "Check" (marker) off automatically
   setCheckOn(false);
+  toggleCheckBtn.disabled = false;
 
   // 1. Choose random interval from list
   const intervalObj = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
