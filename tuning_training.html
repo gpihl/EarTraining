@@ -7,15 +7,20 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="common.css">
   <style>
+    html,
     body {
-      background-color: #343a40;
-      color: #fff;
-      font-family: sans-serif;
       margin: 0;
       -webkit-user-select: none;
       -ms-user-select: none;
       user-select: none;
-      touch-action: manipulation;
+      overflow: hidden;
+      touch-action: none;
+    }
+    body {
+      background-color: #343a40;
+      color: #fff;
+      font-family: sans-serif;
+      height: 100vh;
     }
     #intervalDisplay {
       font-size: 1.2em;
@@ -25,6 +30,18 @@
       position: relative;
       width: 100%;
       margin: 30px auto;
+      height: 160px;
+      display: flex;
+      align-items: center;
+      touch-action: none;
+    }
+    #sliderHitbox {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      cursor: pointer;
     }
     #pitchSlider {
       -webkit-appearance: none;
@@ -34,6 +51,7 @@
       border-radius: 3px;
       outline: none;
       cursor: pointer;
+      pointer-events: none;
     }
     #pitchSlider::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -110,6 +128,7 @@
     <button id="moveToJustBtn" class="btn btn-warning mb-2">Correct Just</button>
   </div>
   <div id="sliderContainer" class="mb-3">
+    <div id="sliderHitbox"></div>
     <input type="range" id="pitchSlider" min="0" max="1" step="any" class="form-range">
     <div id="correctLine"></div>
   </div>
@@ -239,6 +258,8 @@ const newIntervalBtn      = document.getElementById("newIntervalBtn");
 const moveToCorrectBtn    = document.getElementById("moveToCorrectBtn");
 const moveToJustBtn       = document.getElementById("moveToJustBtn");
 const pitchSlider         = document.getElementById("pitchSlider");
+const sliderContainer     = document.getElementById("sliderContainer");
+const sliderHitbox        = document.getElementById("sliderHitbox");
 const correctLine         = document.getElementById("correctLine");
 const centsDifference     = document.getElementById("centsDifference");
 const intervalDisplay     = document.getElementById("intervalDisplay");
@@ -333,18 +354,38 @@ moveToJustBtn.addEventListener("click", async () => {
   Listen for pointerdown (or mousedown) to detect user "grabbing" the slider.
   As soon as the user interacts with the slider, turn the user tone ON (if it’s off).
 */
-pitchSlider.addEventListener("pointerdown", async () => {
+// Allow grabbing the slider from anywhere on the track (helpful on mobile).
+function moveSliderFromEvent(ev) {
+  const rect = pitchSlider.getBoundingClientRect();
+  const rawVal = (ev.clientX - rect.left) / rect.width;
+  const clamped = Math.min(Math.max(rawVal, 0), 1);
+  pitchSlider.value = clamped;
+  // Trigger the normal input handler to update audio
+  pitchSlider.dispatchEvent(new Event("input"));
+}
+
+async function startSliderDrag(e) {
   if (!userOn) {
     await initAudioIfNeeded();
     setUserOn(true);
   }
-});
-pitchSlider.addEventListener("mousedown", async () => {
-  if (!userOn) {
-    await initAudioIfNeeded();
-    setUserOn(true);
-  }
-});
+  moveSliderFromEvent(e);
+  e.preventDefault();
+  const target = e.currentTarget;
+  target.setPointerCapture(e.pointerId);
+  const moveHandler = (ev) => {
+    moveSliderFromEvent(ev);
+  };
+  const upHandler = (ev) => {
+    target.releasePointerCapture(ev.pointerId);
+    target.removeEventListener("pointermove", moveHandler);
+    target.removeEventListener("pointerup", upHandler);
+  };
+  target.addEventListener("pointermove", moveHandler);
+  target.addEventListener("pointerup", upHandler);
+}
+
+sliderHitbox.addEventListener("pointerdown", startSliderDrag);
 
 /*
   On input, update frequency. (This triggers continuously while dragging.)
