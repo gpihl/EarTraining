@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Synth</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="common.css">
+  <style>
+    .key{cursor:pointer;}
+  </style>
+</head>
+<body class="bg-dark text-light">
+<div class="container py-4">
+  <h1 class="text-center mb-4">Synthesizer</h1>
+  <div id="keyboard" class="mb-3"></div>
+</div>
+
+<script src="common.js"></script>
+<script src="sound.js"></script>
+<script>
+const ALL_NOTES = generateNotes(36, 96);
+let keyElements = [];
+const keyboardDiv = document.getElementById('keyboard');
+
+const synthPlayer = new Sound.ChordPlayer({
+  attack: 0.02,
+  release: 0.2,
+  overtoneAmps: [0.20, 0.10, 0.05, 0.03],
+  reverbWet: 0.25
+});
+
+function buildKeyboard(){
+  keyElements = renderKeyboard(ALL_NOTES, keyboardDiv);
+  keyElements.forEach((key, idx) => {
+    key.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      synthPlayer.stop(true);
+      synthPlayer.start([ALL_NOTES[idx].freq]);
+      key.setPointerCapture(e.pointerId);
+    });
+    ['pointerup','pointercancel','pointerleave'].forEach(evt => {
+      key.addEventListener(evt, () => synthPlayer.stop());
+    });
+  });
+}
+
+buildKeyboard();
+</script>
+<script src="menu.js"></script>
+</body>
+</html>
