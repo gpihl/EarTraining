@@ -9,13 +9,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const links = document.createElement('div');
   links.className = 'menu-links';
-  links.innerHTML = `
-    <a href="index.html">Home</a>
-    <a href="chord_training.html">Chords</a>
-    <a href="melody_training.html">Melody</a>
-    <a href="sight_singing.html">Sight-Singing</a>
-    <a href="tuning_training.html">Intonation</a>
-  `;
+
+  const pages = [
+    ['index.html', 'Home'],
+    ['chord_training.html', 'Chords'],
+    ['melody_training.html', 'Melody'],
+    ['sight_singing.html', 'Sight-Singing'],
+    ['tuning_training.html', 'Intonation']
+  ];
+
+  const isHtmlPreview = location.hostname === 'htmlpreview.github.io';
+  let rawBase = '';
+  if (isHtmlPreview) {
+    const rawUrl = location.search.slice(1);
+    rawBase = rawUrl.substring(0, rawUrl.lastIndexOf('/') + 1);
+  }
+
+  pages.forEach(([href, text]) => {
+    const a = document.createElement('a');
+    a.textContent = text;
+    a.href = isHtmlPreview ? `//htmlpreview.github.io/?${rawBase}${href}` : href;
+    links.appendChild(a);
+  });
+
   menu.appendChild(links);
 
   toggle.addEventListener('click', () => {
