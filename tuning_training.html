@@ -24,12 +24,11 @@
     }
     #intervalDisplay {
       font-size: 1.2em;
-      margin-bottom: 10px;
     }
     #sliderContainer {
       position: relative;
       width: 100%;
-      margin: 30px auto;
+      margin: -30px auto;
       height: 160px;
       display: flex;
       align-items: center;
@@ -69,16 +68,8 @@
       border-radius: 2px;
       cursor: pointer;
     }
-    #correctLine {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background-color: red;
-      display: none;
-    }
     #centsDifference {
-      display: none;
+      display: block;
       margin-top: 10px;
       font-weight: bold;
     }
@@ -87,7 +78,6 @@
       background-color: #880;
     }
     #resultsContainer {
-      margin-top: 30px;
       padding-top: 10px;
       width: 100%;
       text-align: left;
@@ -106,13 +96,12 @@
     <button id="toggleUserBtn" class="btn btn-primary me-2 mb-2" style="display:none;">High Tone</button>
     <button id="toggleCheckBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Check Answer</button>
   </div>
-  <div id="intervalDisplay" class="mb-3"></div>
-  <div id="sliderContainer" class="mb-3" style="display:none;">
+  <div id="intervalDisplay"></div>
+  <div id="sliderContainer" style="display:none;">
     <div id="sliderHitbox"></div>
     <input type="range" id="pitchSlider" min="0" max="1" step="any" class="form-range">
-    <div id="correctLine"></div>
   </div>
-  <div id="centsDifference" class="mb-3"></div>
+  <div id="centsDifference"></div>
   <div id="resultsContainer">
     <div id="resultsList"></div>
   </div>
@@ -246,7 +235,6 @@ const newIntervalBtn      = document.getElementById("newIntervalBtn");
 const pitchSlider         = document.getElementById("pitchSlider");
 const sliderContainer     = document.getElementById("sliderContainer");
 const sliderHitbox        = document.getElementById("sliderHitbox");
-const correctLine         = document.getElementById("correctLine");
 const centsDifference     = document.getElementById("centsDifference");
 const intervalDisplay     = document.getElementById("intervalDisplay");
 const resultsList         = document.getElementById("resultsList");
@@ -408,7 +396,8 @@ function setCheckOn(on) {
   toggleCheckBtn.classList.toggle("active", on);
 
   // Always keep the marker line hidden
-  centsDifference.style.display = on ? "block" : "none";
+  centsDifference.textContent = "";
+  // centsDifference.style.display = on ? "block" : "none";
 
   if (on) {
     toggleCheckBtn.disabled = true;
@@ -534,7 +523,6 @@ function updateMarkerPosition() {
   const sliderVal = frequencyToSliderValue(targetFreq);
   const sliderWidth = pitchSlider.offsetWidth;
   const lineX = sliderVal * sliderWidth;
-  correctLine.style.left = lineX + "px";
 }
 
 // Show how many cents away the user is from the correct pitch
