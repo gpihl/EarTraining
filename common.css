@@ -69,10 +69,6 @@ body {
   .control-buttons .btn:last-child {
     margin-bottom: 0;
   }
-  /* Extra space below button stack so the last button isn't clipped */
-  .control-buttons {
-    margin-bottom: 2rem;
-  }
 }
 .app-menu {
   position: fixed;
@@ -111,6 +107,10 @@ body {
   .app-menu button { font-size: 2rem; }
   .app-menu .menu-links { font-size: 1.2rem; }
 }
+.mobile-spacer {
+  display: none;
+}
+
 @media (max-width: 576px) {
   body {
     display: flex;
@@ -119,5 +119,9 @@ body {
   }
   .mobile-bottom {
     margin-top: auto;
+  }
+  .mobile-spacer {
+    display: block;
+    height: 3rem;
   }
 }
