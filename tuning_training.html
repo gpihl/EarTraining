@@ -29,8 +29,8 @@
     #sliderContainer {
       position: relative;
       width: 95%;
-      margin: -30px auto;
-      height: 160px;
+      margin: auto;
+      height: 130px;
       display: flex;
       align-items: center;
       touch-action: none;
@@ -91,14 +91,14 @@
     <div id="sliderHitbox"></div>
     <input type="range" id="pitchSlider" min="0" max="1" step="any" class="form-range">
   </div>
+  <div id="resultsContainer">
+    <div id="resultsList"></div>
+  </div>
   <div class="mb-4 control-buttons">
     <button id="newIntervalBtn" class="btn btn-success me-2 mb-2">New Interval</button>
     <button id="toggleCheckBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Check Answer</button>
     <button id="toggleUserBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Hi <i class="fa-solid fa-power-off"></i></button>
     <button id="toggleRootBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Lo <i class="fa-solid fa-power-off"></i></button>
-  </div>
-  <div id="resultsContainer">
-    <div id="resultsList"></div>
   </div>
 </div>
 <script src="sound.js"></script>
@@ -475,8 +475,8 @@ function updateResultsList() {
   }
   const avg = sum / results.length;
 
-  let html = `<div>Average distance: ${avg.toFixed(1)} cents</div>`;
-  resultsList.innerHTML = html;
+  // let html = `<div>Average distance: ${avg.toFixed(1)} cents</div>`;
+  // resultsList.innerHTML = html;
 }
 
 /***************************************************************
