@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Intonation Practice</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="common.css">
   <style>
     html,
@@ -68,11 +69,6 @@
       border-radius: 2px;
       cursor: pointer;
     }
-    #centsDifference {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-    }
     /* Button highlight when active */
     button.active {
       background-color: #880;
@@ -88,20 +84,19 @@
   </style>
 </head>
 <body class="bg-dark text-light">
-<div class="container py-4">
-  <h1 class="text-center mb-4">Intonation Practice</h1>
-  <div class="mb-4 control-buttons">
-    <button id="newIntervalBtn" class="btn btn-success me-2 mb-2">New Interval</button>
-    <button id="toggleRootBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Low Tone</button>
-    <button id="toggleUserBtn" class="btn btn-primary me-2 mb-2" style="display:none;">High Tone</button>
-    <button id="toggleCheckBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Check Answer</button>
-  </div>
-  <div id="intervalDisplay"></div>
+<h1 class="text-center my-3">Intonation Practice</h1>
+<div class="container py-4 mobile-bottom">
+  <div id="intervalDisplay" class="mb-2"></div>
   <div id="sliderContainer" style="display:none;">
     <div id="sliderHitbox"></div>
     <input type="range" id="pitchSlider" min="0" max="1" step="any" class="form-range">
   </div>
-  <div id="centsDifference"></div>
+  <div class="mb-4 control-buttons">
+    <button id="newIntervalBtn" class="btn btn-success me-2 mb-2">New Interval</button>
+    <button id="toggleCheckBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Check Answer</button>
+    <button id="toggleUserBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Hi <i class="fa-solid fa-power-off"></i></button>
+    <button id="toggleRootBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Lo <i class="fa-solid fa-power-off"></i></button>
+  </div>
   <div id="resultsContainer">
     <div id="resultsList"></div>
   </div>
@@ -235,7 +230,6 @@ const newIntervalBtn      = document.getElementById("newIntervalBtn");
 const pitchSlider         = document.getElementById("pitchSlider");
 const sliderContainer     = document.getElementById("sliderContainer");
 const sliderHitbox        = document.getElementById("sliderHitbox");
-const centsDifference     = document.getElementById("centsDifference");
 const intervalDisplay     = document.getElementById("intervalDisplay");
 const resultsList         = document.getElementById("resultsList");
 
@@ -395,9 +389,8 @@ function setCheckOn(on) {
   checkVisible = on;
   toggleCheckBtn.classList.toggle("active", on);
 
-  // Always keep the marker line hidden
-  centsDifference.textContent = "";
-  // centsDifference.style.display = on ? "block" : "none";
+  // Clear difference text when toggling
+  intervalDisplay.textContent = intervalName;
 
   if (on) {
     toggleCheckBtn.disabled = true;
@@ -528,15 +521,13 @@ function updateMarkerPosition() {
 // Show how many cents away the user is from the correct pitch
 function updateCentsDifference(diffOverride = null) {
   const centDiff = diffOverride !== null ? diffOverride : getCurrentDifference();
-  let text = "";
+  let diffText = "0 cents";
   if (centDiff > 0) {
-    text = `You were ${Math.abs(centDiff).toFixed(1)} cents sharp.`;
+    diffText = `${Math.abs(centDiff).toFixed(1)} cents sharp`;
   } else if (centDiff < 0) {
-    text = `You were ${Math.abs(centDiff).toFixed(1)} cents flat.`;
-  } else {
-    text = "You were 0 cents from the target.";
+    diffText = `${Math.abs(centDiff).toFixed(1)} cents flat`;
   }
-  centsDifference.textContent = text;
+  intervalDisplay.textContent = `${intervalName} (${diffText})`;
 }
 
 /***************************************************************
