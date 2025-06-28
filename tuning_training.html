@@ -14,14 +14,11 @@
       -webkit-user-select: none;
       -ms-user-select: none;
       user-select: none;
-      overflow: hidden;
-      touch-action: none;
     }
     body {
       background-color: #343a40;
       color: #fff;
       font-family: sans-serif;
-      height: 100vh;
     }
     #intervalDisplay {
       font-size: 1.2em;
@@ -78,6 +75,8 @@
       width: 100%;
       text-align: left;
     }
+    .options-toggle{background-color:#555;border-color:#555;}
+    .options-toggle:hover{background-color:#666;border-color:#666;}
     @media (max-width: 576px) {
       h1 { font-size: 1.5rem; }
     }
@@ -99,6 +98,16 @@
     <button id="toggleCheckBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Check Answer</button>
     <button id="toggleUserBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Hi <i class="fa-solid fa-power-off"></i></button>
     <button id="toggleRootBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Lo <i class="fa-solid fa-power-off"></i></button>
+  </div>
+  <div class="text-center mb-2">
+    <button id="optionsToggleBtn" class="btn btn-secondary options-toggle">
+      <i class="fa-solid fa-angle-down"></i>
+    </button>
+  </div>
+  <div id="optionsPanel" class="mb-4 d-none">
+    <div id="intervalCheckboxes" class="mb-2"></div>
+    <button id="checkAllBtn" class="btn btn-secondary btn-sm me-2">Check All</button>
+    <button id="uncheckAllBtn" class="btn btn-secondary btn-sm">Uncheck All</button>
   </div>
   <div class="mobile-spacer"></div>
 </div>
@@ -233,6 +242,32 @@ const sliderContainer     = document.getElementById("sliderContainer");
 const sliderHitbox        = document.getElementById("sliderHitbox");
 const intervalDisplay     = document.getElementById("intervalDisplay");
 const resultsList         = document.getElementById("resultsList");
+const optionsToggleBtn    = document.getElementById("optionsToggleBtn");
+const optionsPanel        = document.getElementById("optionsPanel");
+const intervalCheckboxesDiv = document.getElementById("intervalCheckboxes");
+const checkAllBtn         = document.getElementById("checkAllBtn");
+const uncheckAllBtn       = document.getElementById("uncheckAllBtn");
+
+const intervalCheckboxElems = [];
+
+// Build checkbox list for all intervals
+INTERVALS.forEach((intv, idx) => {
+  const wrapper = document.createElement("div");
+  wrapper.className = "form-check form-check-inline";
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.className = "form-check-input";
+  input.id = `interval_cb_${idx}`;
+  input.checked = true;
+  const label = document.createElement("label");
+  label.className = "form-check-label";
+  label.htmlFor = input.id;
+  label.textContent = intv.name;
+  wrapper.appendChild(input);
+  wrapper.appendChild(label);
+  intervalCheckboxesDiv.appendChild(wrapper);
+  intervalCheckboxElems.push(input);
+});
 
 // Flag to reveal controls on first interval
 let controlsShown = false;
@@ -329,6 +364,26 @@ newIntervalBtn.addEventListener("click", async () => {
   }
   pickNewInterval();
   hasInterval = true;
+});
+
+checkAllBtn.addEventListener("click", () => {
+  intervalCheckboxElems.forEach(cb => cb.checked = true);
+});
+
+uncheckAllBtn.addEventListener("click", () => {
+  intervalCheckboxElems.forEach(cb => cb.checked = false);
+});
+
+optionsToggleBtn.addEventListener("click", () => {
+  optionsPanel.classList.toggle("d-none");
+  const icon = optionsToggleBtn.querySelector("i");
+  if (optionsPanel.classList.contains("d-none")) {
+    icon.classList.remove("fa-angle-up");
+    icon.classList.add("fa-angle-down");
+  } else {
+    icon.classList.remove("fa-angle-down");
+    icon.classList.add("fa-angle-up");
+  }
 });
 
 /***************************************************************
@@ -607,8 +662,10 @@ function pickNewInterval() {
   setCheckOn(false);
   toggleCheckBtn.disabled = false;
 
-  // 1. Choose random interval from list
-  const intervalObj = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
+  // 1. Choose random interval from list of checked options
+  let enabled = INTERVALS.filter((_, idx) => intervalCheckboxElems[idx]?.checked);
+  if (enabled.length === 0) enabled = INTERVALS;
+  const intervalObj = enabled[Math.floor(Math.random() * enabled.length)];
   intervalName = intervalObj.name;
   currentSemitones = intervalObj.semitones;
 
