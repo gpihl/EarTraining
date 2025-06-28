@@ -143,6 +143,47 @@ const INTERVALS = [
   { semitones: 23, name: "Major 14th" }
 ];
 
+// Mapping from run tokens to semitone offsets
+const RUN_SEMITONES = {
+  r: 0, m2: 1, M2: 2, m3: 3, M3: 4, P4: 5, tri: 6, P5: 7,
+  m6: 8, M6: 9, m7: 10, M7: 11, oct: 12, m9: 13, M9: 14,
+  m10: 15, M10: 16, P11: 17, aug11: 18, P12: 19, m13: 20,
+  M13: 21, m14: 22, M14: 23
+};
+
+// Raw interval run definitions
+const RAW_INTERVAL_RUNS = {
+  1: ["r m2"],
+  2: ["r M2"],
+  3: ["r m2 M2 m3", "r M2 m3"],
+  4: ["r M2 M3", "r M2 m3 M3"],
+  5: ["r M3 P4", "r m3 P4"],
+  6: ["r m3 tri", "r M2 M3 tri", "r M3 tri"],
+  7: ["r P4 P5", "r m3 P5", "r M3 P5", "r M2 P5"],
+  8: ["r m3 P5 m6", "r M3 m6", "r m3 m6"],
+  9: ["r M3 P5 M6", "r m3 P5 M6", "r m3 tri M6"],
+  10:["r m3 P5 m7", "r M3 P5 m7", "r m3 tri m7", "r P4 m7"],
+  11:["r M3 P5 M7", "r m3 P5 M7", "r M3 m6 M7"],
+  12:["r P4 P5 oct", "r M3 P5 oct", "r m3 P5 oct", "r M3 m6 oct", "r m3 tri M6 oct"],
+  13:["r M3 P5 m7 m9", "r M3 m6 m7 m9"],
+  14:["r P5 M9", "r M3 P5 M7 M9", "r m3 P5 m7 M9", "r M3 P5 m7 M9"],
+  15:["r m3 P5 m7 oct m10", "r M3 m7 m10", "r P5 m10", "r m3 P5 oct m10", "r m3 tri M6 oct m10"],
+  16:["r M3 P5 M7 oct M10", "r P5 M10", "r M3 P5 oct M10", "r M3 m6 oct M10"],
+  17:["r m3 P5 m7 M9 P11", "r M3 P4 P5 oct M10 P11", "r P4 P5 oct P11", "r P5 P11"],
+  18:["r M3 m7 M9 aug11", "r m7 M10 aug11", "r m3 tri M6 oct m10 aug11", "r M2 M3 tri M6 m7 oct M9 M10 aug11"],
+  19:["r P5 oct P12", "r M3 P5 oct M10 P12", "r m3 P5 oct m10 P12", "r P4 P5 oct P11 P12"],
+  20:["r M3 m7 m9 m10 m13", "r M3 m6 oct M10 m13", "r P5 oct m10 P12 m13", "r m3 m6 oct m10 m13", "r M2 M3 tri M6 m7 oct M9 M10 aug11 m13"],
+  21:["r M3 P5 M6 oct M10 P12 M13", "r M2 M3 tri M6 oct m10 aug11 M13", "r P5 m7 M10 M13", "r P5 oct m10 P12 M13"],
+  22:["r m3 P5 m7 oct m10 P12 m14", "r oct M10 m14", "r P5 oct m10 m14", "r P4 m7 oct P11 m14"],
+  23:["r M3 P5 M7 oct M10 P12 M14", "r m3 P5 M7 oct m10 P12 M14", "r P5 M10 M14", "r M3 tri M7 oct M10 aug11 M14", "r P5 M7 oct P12 M14"]
+};
+
+// Parsed numeric runs built from RAW_INTERVAL_RUNS
+const INTERVAL_RUNS = {};
+for (const [st, runs] of Object.entries(RAW_INTERVAL_RUNS)) {
+  INTERVAL_RUNS[st] = runs.map(r => r.split(/\s+/).map(tok => RUN_SEMITONES[tok]));
+}
+
 // Total slider span in semitones
 const SLIDER_RANGE_SEMITONES = 5;
 
@@ -275,8 +316,8 @@ let controlsShown = false;
 // Tracks whether a previous interval exists
 let hasInterval = false;
 
-// SequencePlayer for quick chromatic runs
-const chromaticPlayer = new Sound.SequencePlayer(
+// SequencePlayer for quick interval runs
+const runPlayer = new Sound.SequencePlayer(
   {
     attack:0.03,
     release:0.05,
@@ -361,7 +402,7 @@ newIntervalBtn.addEventListener("click", async () => {
   }
   await initAudioIfNeeded();
   if (hasInterval) {
-    playChromaticRun();
+    playIntervalRun();
   }
   pickNewInterval();
   hasInterval = true;
@@ -716,13 +757,19 @@ function pickNewInterval() {
   }
 }
 
-// Play a quick chromatic run from the low tone to the high tone
-function playChromaticRun() {
-  const freqs = [];
-  for (let i = 0; i <= currentSemitones; i++) {
-    freqs.push(rootFreq * Math.pow(2, i / 12));
+// Play a quick run appropriate for the interval
+function playIntervalRun() {
+  let runs = INTERVAL_RUNS[currentSemitones];
+  let freqs = [];
+  if (runs && runs.length) {
+    const run = runs[Math.floor(Math.random() * runs.length)];
+    freqs = run.map(st => rootFreq * Math.pow(2, st / 12));
+  } else {
+    for (let i = 0; i <= currentSemitones; i++) {
+      freqs.push(rootFreq * Math.pow(2, i / 12));
+    }
   }
-  chromaticPlayer.playSequence(freqs, 0.05, 0.01);
+  runPlayer.playSequence(freqs, 0.05, 0.01);
 }
 </script>
 <script src="menu.js"></script>
