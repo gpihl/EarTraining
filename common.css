@@ -69,6 +69,10 @@ body {
   .control-buttons .btn:last-child {
     margin-bottom: 0;
   }
+  /* Extra space below button stack so the last button isn't clipped */
+  .control-buttons {
+    margin-bottom: 2rem;
+  }
 }
 .app-menu {
   position: fixed;
