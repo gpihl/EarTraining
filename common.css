@@ -128,16 +128,17 @@ body {
 
 /* Remove persistent darkening on touch devices */
 button, .btn {
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
 
-.btn:focus {
+.btn:focus,
+.btn:focus-visible {
   box-shadow: none !important;
 }
 
 .btn:active:not(.active) {
-  color: var(--bs-btn-color);
-  background-color: var(--bs-btn-bg);
-  border-color: var(--bs-btn-border-color);
-  box-shadow: none;
+  color: var(--bs-btn-color) !important;
+  background-color: var(--bs-btn-bg) !important;
+  border-color: var(--bs-btn-border-color) !important;
+  box-shadow: none !important;
 }
