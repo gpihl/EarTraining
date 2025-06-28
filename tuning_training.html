@@ -100,6 +100,7 @@
     <button id="toggleUserBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Hi <i class="fa-solid fa-power-off"></i></button>
     <button id="toggleRootBtn" class="btn btn-primary me-2 mb-2" style="display:none;">Lo <i class="fa-solid fa-power-off"></i></button>
   </div>
+  <div class="mobile-spacer"></div>
 </div>
 <script src="sound.js"></script>
 <script>
@@ -522,10 +523,11 @@ function updateMarkerPosition() {
 function updateCentsDifference(diffOverride = null) {
   const centDiff = diffOverride !== null ? diffOverride : getCurrentDifference();
   let diffText = "0 cents";
+  const rounded = Math.round(Math.abs(centDiff));
   if (centDiff > 0) {
-    diffText = `${Math.abs(centDiff).toFixed(1)} cents sharp`;
+    diffText = `${rounded} cents sharp`;
   } else if (centDiff < 0) {
-    diffText = `${Math.abs(centDiff).toFixed(1)} cents flat`;
+    diffText = `${rounded} cents flat`;
   }
   intervalDisplay.textContent = `${intervalName} (${diffText})`;
 }

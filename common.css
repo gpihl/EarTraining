@@ -107,6 +107,10 @@ body {
   .app-menu button { font-size: 2rem; }
   .app-menu .menu-links { font-size: 1.2rem; }
 }
+.mobile-spacer {
+  display: none;
+}
+
 @media (max-width: 576px) {
   body {
     display: flex;
@@ -115,5 +119,9 @@ body {
   }
   .mobile-bottom {
     margin-top: auto;
+  }
+  .mobile-spacer {
+    display: block;
+    height: 3rem;
   }
 }
