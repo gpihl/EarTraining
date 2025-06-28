@@ -125,3 +125,19 @@ body {
     height: 3rem;
   }
 }
+
+/* Remove persistent darkening on touch devices */
+button, .btn {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:focus {
+  box-shadow: none !important;
+}
+
+.btn:active:not(.active) {
+  color: var(--bs-btn-color);
+  background-color: var(--bs-btn-bg);
+  border-color: var(--bs-btn-border-color);
+  box-shadow: none;
+}
