@@ -477,6 +477,9 @@ pitchSlider.addEventListener("input", () => {
     const val = parseFloat(pitchSlider.value);
     const freq = sliderValueToFrequency(val);
     userOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    if (checkVisible) {
+      updateCentsDifference();
+    }
   }
 });
 
