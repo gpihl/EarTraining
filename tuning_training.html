@@ -78,8 +78,25 @@
     }
     .options-toggle{background-color:#555;border-color:#555;}
     .options-toggle:hover{background-color:#666;border-color:#666;}
-    .interval-option{background-color:transparent;border:1px solid #0543a0;color:#fff;}
-    .btn-check:checked + .interval-option{background-color:#0543a0;border-color:#043c8e;color:#fff;}
+    .interval-option{
+      background-color:transparent;
+      border:1px solid #0543a0;
+      color:#fff;
+      --bs-btn-color:#fff;
+      --bs-btn-bg:transparent;
+      --bs-btn-border-color:#0543a0;
+      --bs-btn-hover-color:#fff;
+      --bs-btn-hover-bg:transparent;
+      --bs-btn-hover-border-color:#0543a0;
+      --bs-btn-active-color:#fff;
+      --bs-btn-active-bg:#0543a0;
+      --bs-btn-active-border-color:#043c8e;
+    }
+    .btn-check:checked + .interval-option{
+      background-color:#0543a0;
+      border-color:#043c8e;
+      color:#fff;
+    }
     @media (max-width: 576px) {
       h1 { font-size: 1.5rem; }
     }
