@@ -119,29 +119,29 @@
 
 // List of intervals from minor 2nd (1 semitone) to major 14th (23 semitones)
 const INTERVALS = [
-  { semitones: 1,  name: "Minor 2nd" },
-  { semitones: 2,  name: "Major 2nd" },
-  { semitones: 3,  name: "Minor 3rd" },
-  { semitones: 4,  name: "Major 3rd" },
-  { semitones: 5,  name: "Perfect 4th" },
-  { semitones: 6,  name: "Tritone" },
-  { semitones: 7,  name: "Perfect 5th" },
-  { semitones: 8,  name: "Minor 6th" },
-  { semitones: 9,  name: "Major 6th" },
-  { semitones: 10, name: "Minor 7th" },
-  { semitones: 11, name: "Major 7th" },
-  { semitones: 12, name: "Octave" },
-  { semitones: 13, name: "Minor 9th" },
-  { semitones: 14, name: "Major 9th" },
-  { semitones: 15, name: "Minor 10th" },
-  { semitones: 16, name: "Major 10th" },
-  { semitones: 17, name: "Perfect 11th" },
-  { semitones: 18, name: "Augmented 11th" },
-  { semitones: 19, name: "Perfect 12th" },
-  { semitones: 20, name: "Minor 13th" },
-  { semitones: 21, name: "Major 13th" },
-  { semitones: 22, name: "Minor 14th" },
-  { semitones: 23, name: "Major 14th" }
+  { semitones: 1,  name: "Minor 2nd",      emoji: "🥀" },
+  { semitones: 2,  name: "Major 2nd",      emoji: "🌱" },
+  { semitones: 3,  name: "Minor 3rd",      emoji: "🌧️" },
+  { semitones: 4,  name: "Major 3rd",      emoji: "☀️" },
+  { semitones: 5,  name: "Perfect 4th",    emoji: "🌤️" },
+  { semitones: 6,  name: "Tritone",        emoji: "⚡" },
+  { semitones: 7,  name: "Perfect 5th",    emoji: "⭐" },
+  { semitones: 8,  name: "Minor 6th",      emoji: "🌙" },
+  { semitones: 9,  name: "Major 6th",      emoji: "🎈" },
+  { semitones: 10, name: "Minor 7th",      emoji: "🌊" },
+  { semitones: 11, name: "Major 7th",      emoji: "🛸" },
+  { semitones: 12, name: "Octave",         emoji: "🎵" },
+  { semitones: 13, name: "Minor 9th",      emoji: "🍂" },
+  { semitones: 14, name: "Major 9th",      emoji: "🎉" },
+  { semitones: 15, name: "Minor 10th",     emoji: "🌥️" },
+  { semitones: 16, name: "Major 10th",     emoji: "🌟" },
+  { semitones: 17, name: "Perfect 11th",   emoji: "🏔️" },
+  { semitones: 18, name: "Augmented 11th", emoji: "🔥" },
+  { semitones: 19, name: "Perfect 12th",   emoji: "🚀" },
+  { semitones: 20, name: "Minor 13th",     emoji: "🌋" },
+  { semitones: 21, name: "Major 13th",     emoji: "🐳" },
+  { semitones: 22, name: "Minor 14th",     emoji: "🦅" },
+  { semitones: 23, name: "Major 14th",     emoji: "🌌" }
 ];
 
 // Mapping from run tokens to semitone offsets
@@ -256,6 +256,7 @@ let customWave = null;
 let rootFreq = 220;
 let targetFreq = 330;
 let intervalName = "";
+let intervalEmoji = "";
 let currentSemitones = 0;
 
 // "Check" visibility replaces the old marker
@@ -305,7 +306,7 @@ INTERVALS.forEach((intv, idx) => {
   const label = document.createElement("label");
   label.className = "form-check-label";
   label.htmlFor = input.id;
-  label.textContent = intv.name;
+  label.textContent = `${intv.emoji} ${intv.name}`;
   wrapper.appendChild(input);
   wrapper.appendChild(label);
   intervalCheckboxesDiv.appendChild(wrapper);
@@ -492,7 +493,7 @@ function setCheckOn(on) {
   toggleCheckBtn.classList.toggle("active", on);
 
   // Clear difference text when toggling
-  intervalDisplay.textContent = intervalName;
+  intervalDisplay.textContent = `${intervalEmoji} ${intervalName}`;
 
   if (on) {
     toggleCheckBtn.disabled = true;
@@ -632,7 +633,7 @@ function updateCentsDifference(diffOverride = null) {
       diffText = `${rounded} cents flat`;
     }
   }
-  intervalDisplay.textContent = `${intervalName} (${diffText})`;
+  intervalDisplay.textContent = `${intervalEmoji} ${intervalName} (${diffText})`;
 }
 
 /***************************************************************
@@ -715,6 +716,7 @@ function pickNewInterval() {
   if (enabled.length === 0) enabled = INTERVALS;
   const intervalObj = enabled[Math.floor(Math.random() * enabled.length)];
   intervalName = intervalObj.name;
+  intervalEmoji = intervalObj.emoji;
   currentSemitones = intervalObj.semitones;
 
   // 2. Pick a tuned root frequency from the TUNED_ROOTS array
@@ -754,7 +756,7 @@ function pickNewInterval() {
   }
 
   // 7. Update UI text
-  intervalDisplay.textContent = `${intervalName}`;
+  intervalDisplay.textContent = `${intervalEmoji} ${intervalName}`;
 
   // 8. Update marker & cent difference if needed
   if (checkVisible) {
