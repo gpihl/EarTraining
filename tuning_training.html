@@ -106,9 +106,11 @@
     </button>
   </div>
   <div id="optionsPanel" class="mb-4 d-none">
+    <div class="mb-2">
+      <button id="checkAllBtn" class="btn btn-secondary btn-sm me-2">Check All</button>
+      <button id="uncheckAllBtn" class="btn btn-secondary btn-sm">Uncheck All</button>
+    </div>
     <div id="intervalCheckboxes" class="mb-2"></div>
-    <button id="checkAllBtn" class="btn btn-secondary btn-sm me-2">Check All</button>
-    <button id="uncheckAllBtn" class="btn btn-secondary btn-sm">Uncheck All</button>
   </div>
 </div>
 <script src="sound.js"></script>
@@ -295,20 +297,17 @@ const intervalCheckboxElems = [];
 
 // Build checkbox list for all intervals
 INTERVALS.forEach((intv, idx) => {
-  const wrapper = document.createElement("div");
-  wrapper.className = "form-check form-check-inline";
   const input = document.createElement("input");
   input.type = "checkbox";
-  input.className = "form-check-input";
+  input.className = "btn-check";
   input.id = `interval_cb_${idx}`;
   input.checked = true;
   const label = document.createElement("label");
-  label.className = "form-check-label";
+  label.className = "btn btn-outline-light w-100 mb-1";
   label.htmlFor = input.id;
   label.textContent = intv.name;
-  wrapper.appendChild(input);
-  wrapper.appendChild(label);
-  intervalCheckboxesDiv.appendChild(wrapper);
+  intervalCheckboxesDiv.appendChild(input);
+  intervalCheckboxesDiv.appendChild(label);
   intervalCheckboxElems.push(input);
 });
 
