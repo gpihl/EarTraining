@@ -623,12 +623,14 @@ function updateMarkerPosition() {
 // Show how many cents away the user is from the correct pitch
 function updateCentsDifference(diffOverride = null) {
   const centDiff = diffOverride !== null ? diffOverride : getCurrentDifference();
-  let diffText = "0 cents";
   const rounded = Math.round(Math.abs(centDiff));
-  if (centDiff > 0) {
-    diffText = `${rounded} cents sharp`;
-  } else if (centDiff < 0) {
-    diffText = `${rounded} cents flat`;
+  let diffText = "0 cents";
+  if (rounded !== 0) {
+    if (centDiff > 0) {
+      diffText = `${rounded} cents sharp`;
+    } else if (centDiff < 0) {
+      diffText = `${rounded} cents flat`;
+    }
   }
   intervalDisplay.textContent = `${intervalName} (${diffText})`;
 }
